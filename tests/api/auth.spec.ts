@@ -1,15 +1,12 @@
 import {
-  errorSchema,
   logoutResponseSchema,
   tokenResponseSchema,
   validateResponseSchema,
 } from '../../src/api/auth-api.ts';
 import { expectJson } from '../../src/api/expect-json.ts';
+import { errorSchema } from '../../src/api/schemas.ts';
 import { adminCredentials } from '../../src/config/env.ts';
-import { expect, test } from '../fixtures.ts';
-
-const KNOWN_ISSUES =
-  'https://github.com/brunoccalmeida/playwright-qa-starter-kit/blob/main/docs/KNOWN_ISSUES.md';
+import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
 
 test.describe('POST /api/auth/login', () => {
   test('returns a token for valid credentials', async ({ authApi }) => {

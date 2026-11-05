@@ -6,7 +6,6 @@ import { z } from 'zod';
 export const tokenResponseSchema = z.object({ token: z.string().min(1) });
 export const validateResponseSchema = z.object({ valid: z.boolean() });
 export const logoutResponseSchema = z.object({ success: z.boolean() });
-export const errorSchema = z.object({ error: z.string() });
 
 export type Credentials = { username: string; password: string };
 

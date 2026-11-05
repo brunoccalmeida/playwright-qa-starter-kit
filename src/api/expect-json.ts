@@ -36,3 +36,20 @@ export async function expectJson<Schema extends z.ZodType>(
   }
   return result.data;
 }
+
+/**
+ * Returns the item matching the predicate, failing with what was looked for
+ * otherwise. The API creates some resources without returning their id, so
+ * tests find them by a unique field in the list.
+ */
+export function expectFound<T>(
+  items: readonly T[],
+  predicate: (item: T) => boolean,
+  description: string,
+): T {
+  const found = items.find(predicate);
+  if (found === undefined) {
+    throw new Error(`Not found in a list of ${String(items.length)} items: ${description}`);
+  }
+  return found;
+}
