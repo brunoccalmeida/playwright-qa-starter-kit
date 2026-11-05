@@ -13,7 +13,11 @@ export default defineConfig({
   reporter: env.CI ? [['github'], ['list']] : 'list',
   use: {
     baseURL: env.BASE_URL,
-    trace: 'retain-on-failure',
+    // A trace stores every request body, including the login credentials,
+    // in plain text; secret masking covers CI logs, not artifacts. Traces
+    // stay local; in CI, expectJson's failure message (URL + response body)
+    // is the diagnostic.
+    trace: env.CI ? 'off' : 'retain-on-failure',
   },
   projects: [{ name: 'api', testDir: './tests/api' }],
 });

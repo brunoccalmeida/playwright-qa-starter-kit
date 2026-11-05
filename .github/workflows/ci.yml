@@ -69,15 +69,8 @@ jobs:
           BASE_URL: https://automationintesting.online
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-
-      # Traces of failed tests: request, response and timing of each call
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: api-test-results
-          path: test-results/
-          retention-days: 7
+      # No test-results artifact: traces are off in CI because they would
+      # store the credentials in plain text (see playwright.config.ts).
 
   # The single required check of the ruleset on main. Requiring each job by
   # name would mean editing the ruleset whenever a job is added or renamed

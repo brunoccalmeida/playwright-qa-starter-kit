@@ -147,7 +147,7 @@ Os endpoints protegidos leem o cookie `token`, não header `Authorization`; `val
 - **Contratos com `z.object` (tolerant reader):** campo novo na resposta não quebra os clientes, então não reprova o teste; campo faltando ou com tipo errado reprova.
 - **Clientes por recurso** (`AuthApi`, depois `RoomApi`...) devolvendo a `APIResponse` crua: o teste decide o que afirmar, inclusive os casos de erro.
 - **`adminToken` por teste:** o teste de logout queima o próprio token; nenhum outro teste depende dele (test isolation).
-- **`trace: 'retain-on-failure'`** e upload de `test-results/` no CI só em falha: localmente não há retry, então `on-first-retry` nunca gravaria; para API o trace é barato.
+- **Trace só local (`retain-on-failure`), desligado no CI e sem artefato `test-results/`:** o trace guarda o corpo de cada requisição, e o do login traz `{"username":"admin","password":"password"}` em texto puro (visto ao abrir um `trace.zip`); o mascaramento de secrets do Actions vale para o log, não para artefatos, que num repositório público qualquer usuário logado baixa. Não há como mascarar campos no trace, então o seguro é não gerá-lo (_secure by default_). No CI, o diagnóstico é a mensagem do `expectJson` (URL + corpo). Localmente, `retain-on-failure` em vez de `on-first-retry`, porque sem retry este nunca gravaria. **Missão 6 (relatório publicado): não reintroduzir trace no CI sem resolver isto.**
 - **`playwright/expect-expect` aprendeu o `expectJson`** (`assertFunctionNames`, opção conferida no código do plugin), em vez de ser desligado.
 
 **RED:**
@@ -157,11 +157,21 @@ Os endpoints protegidos leem o cookie `token`, não header `Authorization`; `val
 3. Contrato (mutação): `token: z.number()` → `Body does not match the contract: ✖ Invalid input: expected number, received string → at token`, com URL e corpo; desfeita.
 4. `test.fail()` do KI-3 trocado por `test` → `HTTP status of .../api/auth/validate Body: {"valid":true} Expected: 403 Received: 200`: falha pelo motivo do bug, não por erro do teste; desfeita.
 5. Lint: os testes que só usam `expectJson` reprovaram em `playwright/expect-expect` até o rule aprender o nome.
+6. Uma mutação por teste (o RED 2 derruba todos pelo mesmo motivo e não prova cada asserção), cada uma desfeita:
+   - senha errada: status `401`→`200` → `Expected: 200 Received: 401` (com `Body: {"error":"Invalid credentials"}`); mensagem → `Expected: "Wrong credentials" Received: "Invalid credentials"`;
+   - token emitido: `valid` `true`→`false` → `Expected: false Received: true`;
+   - token desconhecido: `403`→`401` → `Expected: 401 Received: 403`; mensagem → `Received: "Invalid token"`;
+   - token vazio: `401`→`400` → `Expected: 400 Received: 401`; mensagem → `Received: "No token provided"`;
+   - logout: `success` `true`→`false` → `Expected: false Received: true`.
+7. Trace no CI: teste quebrado de propósito com `CI=true` → 0 `trace.zip`; sem `CI` → 1.
 
 **Achados:**
 
 - O mapa do spike estava errado no `validate`: ele (e o `logout`) leem o token do **corpo JSON**; só com cookie respondem 500. Corrigido no mapa da API acima. Sondar antes de escrever o cliente evitou um cliente errado.
 - KI-3 confirmado por dois caminhos: depois do logout, `validate` diz `valid:true` e o token ainda abre `GET /api/booking` (sem token: 401).
 - `prettier --write .` formata também arquivos locais não rastreados (o `.vscode/settings.json` criado pela extensão Python); rodar o `--write` só nos arquivos da missão.
+- **Sonda errada parece teste errado:** uma mutação com `sed` por intervalo (`/wrong password/,/});/s/401/400/`) saiu verde. O diff mostrou 1 linha: o `s` pegou o `401` do **título**, e o intervalo terminava no `});` da chamada de login, antes da asserção. Refeita na linha da asserção, falhou. Conferir o diff da mutação antes de ler o resultado.
+
+**Revisor** (agente `reviewer`, diff completo): dois achados, ambos aplicados. (1) O trace enviado como artefato no CI vazaria as credenciais: confirmado abrindo um `trace.zip`; trace desligado no CI e upload removido (ver Decisões). (2) Cinco dos sete testes não tinham RED próprio: uma mutação por teste (RED 6).
 
 **Próxima missão:** 3 — API: rooms/bookings/messages (#4), que reaproveita `expectJson`, as fixtures e o `adminToken` (via cookie `token`), e completa o `KNOWN_ISSUES.md` com os bugs 1, 2, 4 e 5 do spike.
