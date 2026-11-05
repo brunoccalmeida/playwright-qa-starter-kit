@@ -1,3 +1,4 @@
-# Git stores text files with LF whatever each clone's core.autocrlf; the
-# working tree keeps the platform's line endings (CRLF on Windows).
-* text=auto
+# Git stores text files with LF and checks them out with LF on every OS,
+# so Prettier's default `endOfLine: "lf"` holds in any clone (Windows
+# included). Source: https://prettier.io/docs/options#end-of-line
+* text=auto eol=lf

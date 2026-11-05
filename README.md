@@ -6,6 +6,15 @@ The target application is the [Restful Booker Platform](https://automationintest
 
 > 🚧 Work in progress: the kit is being built mission by mission.
 
+## Development
+
+Requires Node.js (version in [.node-version](.node-version)).
+
+```sh
+npm ci          # install the exact locked dependencies
+npm run check   # type-check, lint and format check
+```
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
