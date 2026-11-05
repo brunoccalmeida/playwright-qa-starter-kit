@@ -89,9 +89,10 @@ A autenticação usa o cookie `token`, não header `Authorization`.
 
 - Só `goto('/home')` sem `await`: `npm run check` saiu com **1**, barrado pelo ESLint (`@typescript-eslint/no-floating-promises`, linha 6). Testado isolado porque o `check` encadeia com `&&`: se o `tsc` falhar antes, o lint nem roda.
 - Só `const first: string = ['a'][0]`: barrado pelo `tsc` (`TS2322: Type 'string | undefined'`, efeito do `noUncheckedIndexedAccess`), saída 2.
+- Só `await page.waitForTimeout(1000)`: `npm run check` saiu com **1**, barrado pelo `playwright/no-wait-for-timeout`. A mesma sonda em `src/` passou no ESLint, confirmando que as regras do Playwright valem só para `tests/**`.
 
 **Achado: fim de linha (LF × CRLF).** Com `* text=auto` e `core.autocrlf=true` (padrão do Git no Windows), o checkout grava CRLF e o Prettier, que exige LF, reprova o clone novo. RED: apagar o `tsconfig.json`, restaurar com `git checkout` e rodar `prettier --check` → "Code style issues found". Correção recomendada pela [documentação do Prettier](https://prettier.io/docs/options#end-of-line): `* text=auto eol=lf` no `.gitattributes`. **Não volte para `text=auto` sem `eol=lf`.**
 
-**Revisor:** três achados, todos aplicados: registrar o achado de LF neste resumo; provar o RED do lint pelo `npm run check` com a sonda isolada (o registro original misturava as duas sondas e o código 2 vinha do `tsc`); marcar que `docs/KNOWN_ISSUES.md` só existe a partir da Missão 3.
+**Revisor:** primeira passada com três achados, todos aplicados: registrar o achado de LF neste resumo; provar o RED do lint pelo `npm run check` com a sonda isolada (o registro original misturava as duas sondas e o código 2 vinha do `tsc`); marcar que `docs/KNOWN_ISSUES.md` só existe a partir da Missão 3. Segunda passada (agente `reviewer`, diff final) com dois achados, aplicados: provar o bloco do `eslint-plugin-playwright` (sonda do `waitForTimeout` acima); e escrever a mensagem do squash à mão, porque a do primeiro commit ainda trazia o registro antigo do RED.
 
 **Próxima missão:** 1 — CI de qualidade (#2). Sem CI, os portões dependem de cada pessoa lembrar de rodá-los.
