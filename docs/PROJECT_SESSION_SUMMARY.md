@@ -6,13 +6,13 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                          |
-| -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | 2 — API: autenticação (#3), concluída com o merge deste PR                                                      |
-| Próxima missão | 3 — API: rooms/bookings/messages (#4)                                                                           |
-| PRs abertos    | nenhum após o merge (Dependabot pode abrir os seus: tratar no início do chat)                                   |
-| Portões        | `npm run check` (job `check`) e testes de API (job `api`) no CI; ruleset `Protect main` exige `ci-passed` verde |
-| Testes         | API: autenticação (7, um deles `test.fail()` do KI-3); E2E a partir da Missão 4                                 |
+| Item           | Estado                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Missão atual   | Extra — ignore de majors do TypeScript (#13), concluída com o merge deste PR                                     |
+| Próxima missão | 3 — API: rooms/bookings/messages (#4)                                                                            |
+| PRs abertos    | nenhum após o merge (#11 do Dependabot fechado; Dependabot pode abrir outros: tratar no início do chat)          |
+| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores) e testes de API (job `api`); `ci-passed` no ruleset |
+| Testes         | API: autenticação (7, um deles `test.fail()` do KI-3); E2E a partir da Missão 4                                  |
 
 ## Plano de missões
 
@@ -176,3 +176,37 @@ Os endpoints protegidos leem o cookie `token`, não header `Authorization`; `val
 **Revisor** (agente `reviewer`, diff completo): dois achados, ambos aplicados. (1) O trace enviado como artefato no CI vazaria as credenciais: confirmado abrindo um `trace.zip`; trace desligado no CI e upload removido (ver Decisões). (2) Cinco dos sete testes não tinham RED próprio: uma mutação por teste (RED 6).
 
 **Próxima missão:** 3 — API: rooms/bookings/messages (#4), que reaproveita `expectJson`, as fixtures e o `adminToken` (via cookie `token`), e completa o `KNOWN_ISSUES.md` com os bugs 1, 2, 4 e 5 do spike.
+
+## Extra — ignore de majors do TypeScript (#13)
+
+**Contexto:** o Dependabot abriu o #11 (TypeScript 6.0.3 → 7.0.2), reprovado no `npm ci` com `ERESOLVE`: o `typescript-eslint` 8.72.1 (o mais recente) exige `typescript >=4.8.4 <6.1.0`. Fechar o PR não basta: cada versão nova do TS 7 abriria outro PR vermelho, ocupando a fila de um PR por vez.
+
+**Entregue:** entrada `ignore` (`typescript`, `version-update:semver-major`) no `.github/dependabot.yml`; sentinela `scripts/check-dependency-ignores.ts`, último passo do `npm run check` (`check:deps`); `semver` 7.8.5, `@types/semver` 7.8.0 e `yaml` 2.9.1 como dependências de desenvolvimento; #11 fechado com o motivo.
+
+**Decisões:**
+
+- **`ignore` no arquivo, não o comando `@dependabot ignore this major version`:** o comando grava a regra fora do repositório ("Dependabot stores the preferences for the repository centrally"), e a própria [documentação](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/managing-pull-requests-for-dependency-updates) recomenda "explicitly define the dependencies and versions to ignore in the configuration file". Só `update-types` de major: patches, minors e atualizações de segurança continuam chegando ([options reference](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference): "`update-types` only affects _version_ updates, not _security updates_").
+- **Sentinela, porque o `ignore` do Dependabot é silencioso:** nada avisa quando o motivo deixa de existir. Ela reprova quando o peer do `typescript-eslint` instalado aceita a próxima major **e** o `ignore` ainda está lá. Dispara no PR do Dependabot que traz esse `typescript-eslint`, a hora certa. **Quando disparar:** apagar o bloco `ignore` num PR próprio para a `main`, não no branch do Dependabot (push ali faz o Dependabot parar de rebasear o PR, e a `main` exige branch atualizado); depois comentar `@dependabot rebase` no PR bloqueado. O Dependabot então propõe a major do TypeScript num PR separado. Qualquer entrada `ignore` do `typescript` conta, em qualquer formato (`update-types`, `versions` ou nenhum), para uma regra reescrita não calar o alarme. Alternativas descartadas: fechar cada PR do TS 7 (lembrete ruidoso, dispara mesmo sem nada mudar); revisão periódica (depende de memória).
+- **Prática de mercado conferida:** é o padrão de lembrete condicional da regra [`expiring-todo-comments`](https://github.com/sindresorhus/eslint-plugin-unicorn/blob/main/docs/rules/expiring-todo-comments.md) do `eslint-plugin-unicorn` (recomendada; condições como `[peer:eslint@>=9]`), e uma _fitness function_ de _Building Evolutionary Architectures_ ([InfoQ](https://www.infoq.com/articles/fitness-functions-architecture/)). A regra do unicorn não serve aqui: só pergunta a versão do `typescript-eslint` (não sabemos se o suporte virá numa 8.x ou 9.0) e só lê comentários JS/TS. O [Renovate](https://docs.renovatebot.com/key-concepts/dashboard/) resolve com um dashboard de atualizações ignoradas; trocar de ferramenta por um `ignore` seria desproporcional (YAGNI).
+- **Próxima major derivada do TypeScript instalado**, nada fixo: depois de migrar para o 7, a mesma sentinela vigia o 8 se o `ignore` voltar.
+- **`yaml` para ler o `dependabot.yml`**, não regex (que casaria com um comentário); arquivos validados com zod e `z.prettifyError`, como o `env.ts`.
+- **`semver` 7.8.5, não 7.8.6:** a 7.8.6 tinha 3 dias; mesmo critério do `cooldown` de 7 dias.
+
+**RED:**
+
+1. Teste antes do código: `check:deps` ligado ao `package.json` antes do script existir → `Error: Cannot find module '...\scripts\check-dependency-ignores.ts'`.
+2. Evento simulado: peer em `node_modules/typescript-eslint/package.json` trocado para `>=4.8.4 <7.1.0` → `typescript-eslint 8.72.1 accepts TypeScript 7 (peer: ">=4.8.4 <7.1.0"). Remove the typescript ignore from .github/dependabot.yml in a pull request of its own to main, then comment "@dependabot rebase" on this one.`, saída 1.
+3. Correção prevista: no mesmo cenário, bloco `ignore` apagado (8 linhas) → `No typescript ignore in .github/dependabot.yml: nothing to check.`, saída 0.
+4. `dependabot.yml` malformado (`ignore:` vazio) → `Unexpected shape of .github/dependabot.yml: ✖ Invalid input: expected array, received null → at updates[0].ignore`.
+5. `ignore` reescrito com `versions: ['>=7']` no lugar de `update-types`, peer aceitando o TS 7 → mesma reprovação do RED 2, saída 1 (antes da correção do revisor, a sentinela ficaria muda).
+
+Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major ignore still needed: typescript-eslint 8.72.1 peer ">=4.8.4 <6.1.0" rejects TypeScript 7.`
+
+**Achados:**
+
+- **Sonda errada de novo:** a primeira sonda da correção apagou só a entrada e deixou `ignore:` só com comentários, que em YAML é `null`; a sentinela quebrou com um `ZodError` cru. A sonda estava errada (a correção real apaga o bloco), mas o achado melhorou o código: a mensagem agora cita arquivo e campo.
+- `npm run check` local reprova no Prettier por causa do `.vscode/settings.json` não rastreado (achado da Missão 2); no CI não existe.
+
+**Revisor** (agente `reviewer`, diff completo): sem bugs de correção; conferiu `semver.intersects` nos casos de borda (prerelease só, range sem limite superior, range inválido lança). Dois achados, ambos aplicados: (1) faltava o procedimento de quando a sentinela dispara: corrigir no branch do Dependabot o deixaria sem rebase; agora mensagem, script, `dependabot.yml` e este resumo mandam corrigir num PR próprio e usar `@dependabot rebase`; (2) a sentinela só reconhecia a forma exata do `ignore` e ficaria muda com uma regra reescrita: agora qualquer entrada `typescript` conta (RED 5), e a ausência de `ignore` aparece no log.
+
+**Próxima missão:** 3 — API: rooms/bookings/messages (#4).
