@@ -6,7 +6,7 @@ Regras que valem em todo chat, compartilhadas entre Claude Code (`CLAUDE.md` imp
 
 ## O que é este projeto
 
-Kit reaproveitável de automação de QA para clientes: Playwright + TypeScript, testes E2E e de API, CI no GitHub Actions e relatório HTML publicado. O app alvo é o [Restful Booker Platform](https://automationintesting.online), um **ambiente compartilhado** (outros testers usam ao mesmo tempo) e com **bugs conhecidos** (`docs/KNOWN_ISSUES.md`).
+Kit reaproveitável de automação de QA para clientes: Playwright + TypeScript, testes E2E e de API, CI no GitHub Actions e relatório HTML publicado. O app alvo é o [Restful Booker Platform](https://automationintesting.online), um **ambiente compartilhado** (outros testers usam ao mesmo tempo) e com **bugs conhecidos** (`docs/KNOWN_ISSUES.md`, criado na Missão 3; até lá, a lista está em `docs/PROJECT_SESSION_SUMMARY.md`).
 
 ## Regra de ouro: todo teste foi visto falhando
 
