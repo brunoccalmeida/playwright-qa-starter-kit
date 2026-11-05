@@ -40,6 +40,38 @@ jobs:
       - name: Type check, lint and format check
         run: npm run check
 
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # API tests need no browser, so no `playwright install` here.
+      # Credentials are secrets in both stores: Actions secrets are not
+      # available to workflows triggered by Dependabot, which read Dependabot
+      # secrets of the same name instead.
+      - name: Run API tests
+        run: npm run test:api
+        env:
+          BASE_URL: https://automationintesting.online
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      # No test-results artifact: traces are off in CI because they would
+      # store the credentials in plain text (see playwright.config.ts).
+
   # The single required check of the ruleset on main. Requiring each job by
   # name would mean editing the ruleset whenever a job is added or renamed
   # (matrix jobs are named after their values); this job's name never changes.
@@ -48,7 +80,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [check]
+    needs: [check, api]
     if: ${{ always() }}
 
     steps:

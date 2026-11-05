@@ -26,6 +26,8 @@ export default defineConfig(
       'playwright/no-focused-test': 'error',
       'playwright/no-wait-for-timeout': 'error',
       'playwright/prefer-web-first-assertions': 'error',
+      // expectJson (src/api/expect-json.ts) asserts status and contract
+      'playwright/expect-expect': ['error', { assertFunctionNames: ['expectJson'] }],
     },
   },
 );
