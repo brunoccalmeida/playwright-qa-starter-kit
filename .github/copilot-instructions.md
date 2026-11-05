@@ -97,7 +97,7 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 - Antes de commitar: `npm run check` verde.
 - **Um PR aberto por vez**; trabalho pronto espera em commit local até a fila esvaziar.
 - **Antes de abrir o PR da missão**, o subagente `reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue; corrija os achados que procedem e registre os descartados com o porquê.
-- **Merge só pelo usuário.** Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
+- **Merge só pelo usuário** (skill `/ship-pr`, que liga o auto-merge). Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
 
 ## Princípios
 

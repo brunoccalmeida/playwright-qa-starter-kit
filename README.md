@@ -15,6 +15,12 @@ npm ci          # install the exact locked dependencies
 npm run check   # type-check, lint and format check
 ```
 
+## Continuous integration
+
+Every pull request runs the [CI workflow](.github/workflows/ci.yml). `main` is protected by a ruleset: changes land only through a squash-merged pull request whose `ci-passed` check is green on an up-to-date branch. `ci-passed` is the single required check; it succeeds only when every other job of the workflow succeeded, so new jobs are added to its `needs`, never to the ruleset.
+
+Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)).
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
