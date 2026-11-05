@@ -126,4 +126,6 @@ A autenticação usa o cookie `token`, não header `Authorization`.
 - Os checks logo após o push ainda eram do commit anterior (`gh pr checks --watch` retornou antes de o run novo existir): consultar os check runs pelo SHA da head, como manda a regra.
 - O terminal do Claude Code no Windows ainda não tinha o Node no `PATH` (armadilha do spike); contorno: recarregar o `PATH` do registro na sessão do PowerShell.
 
+**Revisor** (agente `reviewer`, diff completo): quatro achados. Aplicados, todos na `ship-pr`: (1) `gh pr checks --watch` logo após `update-branch` vê os checks do commit anterior, ou nenhum; (2) o auto-merge é assíncrono, então `OPEN` com checks verdes ainda não é resultado; (3) `DIRTY` não era tratado. Os três viraram um laço que lê `ci-passed` pelo SHA e só sai num estado final. Ao testar o laço, uma falha de rede deixou o SHA vazio e ele repetiu para sempre; ganhou `${sha:?}` (fail fast) e um prazo de 30 min. Descartado: (4) a citação do auto-merge "seria de memória"; conferida na página, é a primeira frase literal de "About auto-merge".
+
 **Próxima missão:** 2 — API: autenticação (#3), que traz `@playwright/test` e o primeiro job de testes para os `needs` do gate.
