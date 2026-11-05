@@ -77,3 +77,8 @@ jobs:
         run: |
           jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
           jq -e 'length > 0 and all(.[]; .result == "success")' <<< "$NEEDS" > /dev/null
+
+  forgotten-job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "RED probe - not in the gate's needs"
