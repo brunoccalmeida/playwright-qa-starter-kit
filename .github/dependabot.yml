@@ -25,6 +25,14 @@ updates:
       npm-minor-patch:
         patterns: ['*']
         update-types: ['minor', 'patch']
+    ignore:
+      # typescript-eslint's peer dependency rejects the next TypeScript major,
+      # so its PR would fail `npm ci` (ERESOLVE). Version updates only: security
+      # updates still arrive. scripts/check-dependency-ignores.ts fails
+      # `npm run check` once typescript-eslint accepts that major: then delete
+      # this entry in a PR of its own (see the script for the steps).
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'

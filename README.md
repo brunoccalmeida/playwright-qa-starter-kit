@@ -13,7 +13,7 @@ Requires Node.js (version in [.node-version](.node-version)).
 ```sh
 npm ci            # install the exact locked dependencies
 cp .env.example .env
-npm run check     # type-check, lint and format check
+npm run check     # type-check, lint, format check and dependency-ignore sentinel
 npm run test:api  # API tests (no browser needed)
 ```
 
@@ -36,7 +36,7 @@ Every pull request runs the [CI workflow](.github/workflows/ci.yml). `main` is p
 
 The `api` job reads the admin credentials from the repository secrets `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Set them both as **Actions** and as **Dependabot** secrets: workflows triggered by Dependabot can only read Dependabot secrets.
 
-Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)).
+Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)). TypeScript majors are ignored while `typescript-eslint` rejects them as a peer dependency; [a sentinel](scripts/check-dependency-ignores.ts) in `npm run check` fails as soon as that is no longer true, so the ignore rule never outlives its reason.
 
 ## License
 
