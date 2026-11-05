@@ -164,6 +164,7 @@ Os endpoints protegidos leem o cookie `token`, não header `Authorization`; `val
    - token vazio: `401`→`400` → `Expected: 400 Received: 401`; mensagem → `Received: "No token provided"`;
    - logout: `success` `true`→`false` → `Expected: false Received: true`.
 7. Trace no CI: teste quebrado de propósito com `CI=true` → 0 `trace.zip`; sem `CI` → 1.
+8. CI sem os secrets (primeiro run do PR): job `api` parou em `Invalid environment configuration` com `Too small: expected string to have >=1 characters → at ADMIN_USERNAME` (e `ADMIN_PASSWORD`); `ci-passed` reprovou; PR `BLOCKED`. Secret inexistente vira **string vazia**, não variável ausente: sem o `.min(1)` do schema, a validação passaria e cada teste quebraria com um 401 longe da causa.
 
 **Achados:**
 
