@@ -1,0 +1,3 @@
+# Git stores text files with LF whatever each clone's core.autocrlf; the
+# working tree keeps the platform's line endings (CRLF on Windows).
+* text=auto

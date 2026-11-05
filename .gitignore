@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Local configuration (may hold credentials)
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
