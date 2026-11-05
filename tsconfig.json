@@ -16,7 +16,8 @@
     "checkJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts", "**/*.mjs"],
   "exclude": ["node_modules", "test-results", "playwright-report", "blob-report"]

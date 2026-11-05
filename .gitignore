@@ -4,6 +4,11 @@ node_modules/
 # Local configuration (may hold credentials)
 .env
 
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+
 # OS / editor
 .DS_Store
 Thumbs.db
