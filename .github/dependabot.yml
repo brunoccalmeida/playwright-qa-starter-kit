@@ -1,0 +1,41 @@
+# Dependabot version updates. Security updates are enabled in the repository
+# settings and ignore the cooldown below.
+#
+# Grouped to limit work in progress: main requires up-to-date branches, so each
+# merge makes every other open PR stale; fewer PRs means fewer CI cycles.
+# Majors match no group and get their own PR: a major is a human decision
+# (read the release notes, check peer dependencies) and is easier to isolate.
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    # Versions are pinned exactly (--save-exact): bump the pin, never widen it
+    versioning-strategy: 'increase'
+    # A broken release is usually yanked or fixed within days (the spike found
+    # @playwright/test 1.65.0 published without its playwright-core)
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'build'
+      include: 'scope'
+    groups:
+      npm-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    groups:
+      # Low risk and reviewed together: one PR for all actions
+      github-actions:
+        patterns: ['*']

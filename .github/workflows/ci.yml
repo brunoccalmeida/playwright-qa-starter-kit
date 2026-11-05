@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: jobs that need more ask for it explicitly
+permissions:
+  contents: read
+
+# A new push to a PR supersedes the run of the previous commit. Runs on main
+# are never cancelled: each merge keeps its own result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Same Node as local development: one source of truth (.node-version)
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      # ci, not install: fails if package-lock.json and package.json disagree
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check, lint and format check
+        run: npm run check
+
+  # The single required check of the ruleset on main. Requiring each job by
+  # name would mean editing the ruleset whenever a job is added or renamed
+  # (matrix jobs are named after their values); this job's name never changes.
+  # always(): a required check that is skipped counts as passed, so the gate
+  # must run, and fail, when a dependency fails or is cancelled.
+  ci-passed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [check]
+    if: ${{ always() }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A job missing from "needs" would not gate the merge. Compare the
+      # jobs this gate waited for with every other job of this workflow.
+      - name: Require the gate to need every job
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          expected=$(yq -o=json '.jobs | keys | map(select(. != "ci-passed")) | sort' .github/workflows/ci.yml | jq -c .)
+          actual=$(jq -c 'keys | sort' <<< "$NEEDS")
+          echo "workflow jobs: $expected"
+          echo "gate needs:    $actual"
+          test "$expected" = "$actual"
+
+      # Allowlist: only an explicit "success" passes; failure, cancelled and
+      # skipped all fail, because a skipped job tested nothing.
+      - name: Require every job to succeed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          jq -e 'length > 0 and all(.[]; .result == "success")' <<< "$NEEDS" > /dev/null
