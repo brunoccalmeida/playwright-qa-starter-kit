@@ -17,6 +17,7 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps",
     "test": "playwright test",
     "test:api": "playwright test --project=api",
+    "test:e2e": "playwright test --project=e2e",
     "check:deps": "node scripts/check-dependency-ignores.ts"
   },
   "devDependencies": {
