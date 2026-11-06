@@ -6,13 +6,13 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                           |
-| -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | 3 — API: rooms/bookings/messages (#4), concluída com o merge deste PR                                            |
-| Próxima missão | 4 — E2E: fundação (#5)                                                                                           |
-| PRs abertos    | nenhum após o merge (#11 do Dependabot fechado; Dependabot pode abrir outros: tratar no início do chat)          |
-| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores) e testes de API (job `api`); `ci-passed` no ruleset |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E na Missão 4 |
+| Item           | Estado                                                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual   | Extra — KNOWN_ISSUES em inglês e `npm audit` no CI (#17), concluída com o merge deste PR; Missão 3 concluída (#16)                          |
+| Próxima missão | 4 — E2E: fundação (#5), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                               |
+| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                |
+| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (job `api`) e `npm audit` (job `audit`); `ci-passed` no ruleset |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E na Missão 4                            |
 
 ## Plano de missões
 
@@ -22,12 +22,27 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 | 1   | CI de qualidade              | Workflow com `npm run check` e job agregador `ci-passed`; ruleset na `main`; skill `ship-pr`                         |
 | 2   | API: autenticação            | `@playwright/test`, `playwright.config.ts`, env validado (zod), cliente de API, helper `expectJson`, testes de login |
 | 3   | API: rooms/bookings/messages | Testes de contrato e regra de negócio; `docs/KNOWN_ISSUES.md` com os bugs do app                                     |
+| —   | Extra (#17)                  | `docs/KNOWN_ISSUES.md` em inglês (entregável do cliente) e regra de idioma ajustada; `npm audit` no CI               |
 | 4   | E2E: fundação                | Page Objects, projeto `setup` + `storageState`, home e login                                                         |
 | 5   | E2E: jornadas                | Contato, reserva (com `page.route` contornando o bug #1), admin de quartos                                           |
 | 6   | Relatório                    | Relatório HTML no GitHub Pages, Firefox no CI, execução noturna                                                      |
 | 7   | Documentação                 | `docs/ADAPTING.md` (como reaproveitar o kit num cliente), README EN e pt-BR                                          |
 
 Princípio: cada dependência entra na missão que a usa (YAGNI). Por isso `@playwright/test`, `zod` e `playwright.config.ts` ficam para a Missão 2.
+
+## Ordem de trabalho entre repositórios
+
+Combinada em 06/11/2026, quando o [automation-template](https://github.com/brunoccalmeida/automation-template) foi **pausado** até o primeiro trabalho pago de automação. Pela regra de três, duas fontes (este kit e o `uat-automation-framework`) não bastam para extrair o núcleo comum; até lá, as melhorias entram à mão em cada repositório. Por isso a #15 tem a label `blocked`. Detalhes na seção "Pausa" do [resumo do automation-template](https://github.com/brunoccalmeida/automation-template/blob/main/docs/PROJECT_SESSION_SUMMARY.md).
+
+A ordem é de **prioridade, não de dependência**: itens de repositórios diferentes andam em paralelo, em chats separados ("um PR aberto por vez" vale por repositório).
+
+1. ✅ Este repo: Missão 3 (#4), integrada no PR #16.
+2. `uat-automation-framework`: `timeout-minutes` e `persist-credentials: false` em todos os jobs.
+3. ✅ Este repo: `docs/KNOWN_ISSUES.md` em inglês, com a regra de idioma ajustada, e `npm audit` no CI (#17).
+4. Este repo: Missões 4, 5 e 6 (#5, #6, #7: E2E e relatório HTML no GitHub Pages). Depois, README com badges e um "At a Glance", sem o aviso de "Work in progress".
+5. `uat-automation-framework`: #129 (flaky no Firefox).
+
+**KI-3 nas propostas comerciais:** o KI-3 (o logout não invalida o token) entra como **exemplo de método**: achar o bug, prová-lo com um teste que afirma o comportamento correto (`test.fail()`) e documentar o impacto. Não entra como vulnerabilidade inédita, porque o Restful Booker Platform é um app de treino com bugs conhecidos.
 
 ## Achados do spike (antes da Missão 0)
 
@@ -211,7 +226,7 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 
 **Próxima missão:** 3 — API: rooms/bookings/messages (#4).
 
-## Missão 3 — API: rooms/bookings/messages (#4)
+## Missão 3 — API: rooms/bookings/messages (#4), concluída (#16)
 
 **Entregue:** clientes `RoomApi`, `BookingApi` e `MessageApi` com contratos zod; `src/api/schemas.ts` com os três formatos de erro do app e o `authCookie`; fábricas de dados (`src/data/factories.ts`: nomes com sufixo, datas aleatórias de 1 a 10 anos à frente); fixtures `roomApi`, `bookingApi`, `messageApi` e `room` (um quarto por teste); helper `expectFound`; 20 testes novos (27 no total); `docs/KNOWN_ISSUES.md` com KI-1 a KI-6.
 
@@ -253,3 +268,21 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Revisor** (agente `reviewer`, diff completo): três achados, todos aplicados. (1) Os `test.fail()` do KI-2 e do KI-4 usavam `expectJson(..., z.unknown())`, que também exige JSON: uma correção com 401 vazio ou em texto continuaria falhando e nunca seria avisada. Novo helper `expectStatus` (ensinado ao `playwright/expect-expect`); RED refeito trocando por `test`: `Expected: 400 Received: 409` e `Expected: 401 Received: 200`. (2) `lists rooms matching the contract` afirmava `rooms.length > 0`, presumindo os quartos do seed, que a limpeza do ambiente pode apagar; agora usa a fixture `room` e `toContainEqual(room)` (mutação `roomPrice: 999` reprova). (3) O KI-5 apontava para a Missão 4, mas contato e admin de quartos são da Missão 5 (#6); corrigido. Suíte com `--repeat-each=3`: 81 de 81.
 
 **Próxima missão:** 4 — E2E: fundação (#5). Os clientes de API servem para preparar dados dos testes de navegador (criar quarto e reserva pela API, verificar na UI). O KI-5 ganha o seu teste na Missão 5 (#6), com as jornadas de contato e admin.
+
+## Extra — KNOWN_ISSUES em inglês e `npm audit` no CI (#17)
+
+**Entregue:** `docs/KNOWN_ISSUES.md` em inglês americano, reescrito para o cliente (sem "spike" nem números de missão; nota "How they are tracked" explicando o `test.fail()`); regra de idioma ajustada; job `audit` (`npm audit`) no `needs` do `ci-passed`; `.vscode/` no `.gitignore`; [ordem de trabalho](#ordem-de-trabalho-entre-repositórios) registrada acima.
+
+**Decisões:**
+
+- **Regra de idioma pelo leitor, não pelo tipo de arquivo:** "documentação interna em português" classificava o `KNOWN_ISSUES.md` errado, porque ele é entregável de QA para o cliente. O critério agora é quem lê: o que vai para o cliente segue o idioma do código (inglês). Issues e PRs, que já eram em inglês, ficaram explícitos na regra.
+- **Títulos `## KI-N: ...` intocados:** as anotações dos `test.fail()` apontam para as âncoras geradas a partir deles. Conferido gerando o slug de cada título e procurando cada `#ki-*` usado em `tests/`: 5 de 5 (o KI-5 ainda não tem teste).
+- **"Confirme que o teste falha pelo motivo do bug antes de marcar `test.fail()`"** saiu do `KNOWN_ISSUES.md` para a regra de testes: é instrução para quem escreve teste, não informação para o cliente.
+- **`npm audit` não é uma segunda fonte, ao contrário do `pip-audit`:** o `pip-audit` do UAT consulta a base PyPI/OSV, diferente da do Dependabot; o `npm audit` consulta a própria [GitHub Advisory Database](https://github.blog/security/supply-chain-security/github-advisory-database-now-powers-npm-audit/), a mesma dos alertas do Dependabot (ligados neste repo, com security updates). O valor do job é **bloquear o merge**, coisa que alerta não faz. Por isso ele **não tem `schedule`**: entre PRs, os alertas já vigiam a `main` com a mesma base (YAGNI).
+- **Política igual à do UAT:** qualquer vulnerabilidade reprova (o `audit-level` padrão, `null`, sai com código diferente de zero para qualquer achado). A saída para uma vulnerabilidade transitiva é o `overrides`, nunca `npm audit fix --force` nem `continue-on-error`.
+- **Sem cache e sem `npm ci` no job:** o `npm audit` lê o `package-lock.json` ([docs do npm](https://docs.npmjs.com/cli/v11/commands/npm-audit): "npm requires a package-lock or shrinkwrap"), então audita exatamente o que o `npm ci` instalaria, inclusive as dependências de desenvolvimento, que são o que este kit executa (sem `--omit=dev`).
+- **`.vscode/` ignorada:** só tinha um ajuste pessoal de Python (`python.terminal.useEnvFile`), sem relação com o projeto. Configuração de editor pessoal não é configuração do projeto. Um `.vscode/extensions.json` compartilhado só entra quando houver motivo (YAGNI).
+
+**RED:**
+
+1. Local: sem o `override` do `minimatch` e com o lockfile regenerado (`npm install --package-lock-only`), `npm audit` sai com código 1 e `GHSA-g3hv-75wg-m249` (moderate); restaurado, `found 0 vulnerabilities`, código 0.
