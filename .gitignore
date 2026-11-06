@@ -12,3 +12,6 @@ blob-report/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Personal editor settings (not project configuration)
+.vscode/
