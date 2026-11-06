@@ -286,5 +286,8 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **RED:**
 
 1. Local: sem o `override` do `minimatch` e com o lockfile regenerado (`npm install --package-lock-only`), `npm audit` sai com código 1 e `GHSA-g3hv-75wg-m249` (moderate); restaurado, `found 0 vulnerabilities`, código 0.
+2. CI: commit-sonda no PR com o mesmo lockfile vulnerável, depois revertido (o lockfile voltou idêntico ao da `main`). Run 42304669865: `audit: failure` (`GHSA-g3hv-75wg-m249`, "10 moderate severity vulnerabilities", código 1) e `ci-passed: failure` com `audit: failure`; `check` e `api` verdes. O portão bloqueia o merge de ponta a ponta.
+
+**Achado do chat:** `git revert` não aceita `-q` (a reversão não aconteceu, e o encadeamento com `&&` evitou efeito colateral). E `python` no Git Bash travou de novo (atalho da Microsoft Store, já registrado na Missão 3): não o chame.
 
 **Revisor** (agente `reviewer`, diff completo): um achado, aplicado. No KI-5, a tradução trocou "Observado (spike)" por "Actual", apresentando ao cliente como fato atual uma observação que nenhum teste reverificou. Agora é "Actual (exploratory testing, not yet covered by a test)". Na Missão 5 (#6), o KI-5 precisa ser visto falhando de novo antes de receber o `test.fail()`.
