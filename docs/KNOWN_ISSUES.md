@@ -1,57 +1,57 @@
-<!-- LTeX: language=pt-BR -->
+<!-- LTeX: language=en-US -->
 
-# Bugs conhecidos do app alvo
+# Known issues in the application under test
 
-Bugs do [Restful Booker Platform](https://automationintesting.online) que os testes encontraram. Cada um tem um teste marcado com `test.fail()` que afirma o comportamento **correto** e aponta para cá: enquanto o bug existir, o teste "falha como esperado"; quando o bug for corrigido, o teste passa a reprovar e avisa que a marcação deve sair.
+Defects in the [Restful Booker Platform](https://automationintesting.online) found by this test suite.
 
-Antes de marcar um teste com `test.fail()`, confirme que ele falha **pelo motivo do bug** (troque temporariamente por `test` e leia a mensagem): `test.fail()` aceita qualquer falha, inclusive um erro no próprio teste.
+**How they are tracked:** each issue has a test marked `test.fail()` that asserts the **correct** behavior and links here. While the defect exists, the test "fails as expected" and the run stays green; once the defect is fixed, the test starts failing and signals that the marker must be removed. The suite keeps documenting the defect and detects its fix, without hiding it behind a skipped test.
 
-Os números seguem a ordem em que os bugs foram encontrados (KI-1 a KI-5 no spike, KI-6 na Missão 3).
+Issues are numbered in the order they were found.
 
 ## KI-1: GET by id returns 500
 
-- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (com ou sem o cookie `token` de admin). No spike, `PUT` e `DELETE` em `/api/{room,booking}/{id}` também responderam 500; não foram sondados de novo, para não apagar dados do ambiente compartilhado.
-- **Esperado:** 200 com o recurso, para um id que acabou de ser criado.
-- **Observado:** `500` com corpo `Internal Server Error` (texto, não JSON).
-- **Impacto:** a página `/reservation/:id` fica em branco (Missão 5 contorna com `page.route`); os dados criados pelos testes não podem ser apagados.
-- **Testes:** [rooms.spec.ts](../tests/api/rooms.spec.ts) `GET /api/room/{id} › returns the room`; [bookings.spec.ts](../tests/api/bookings.spec.ts) `GET /api/booking/{id} › returns the booking`; [messages.spec.ts](../tests/api/messages.spec.ts) `GET /api/message/{id} › returns the full message`.
+- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/api/{room,booking}/{id}` also returned 500; they were not probed again, to avoid deleting data in the shared environment.
+- **Expected:** 200 with the resource, for an ID that was just created.
+- **Actual:** `500` with the body `Internal Server Error` (plain text, not JSON).
+- **Impact:** the `/reservation/:id` page renders blank (the browser tests will work around it by serving the room from `GET /api/room`, see #6); data created by the tests cannot be deleted.
+- **Tests:** [rooms.spec.ts](../tests/api/rooms.spec.ts) `GET /api/room/{id} › returns the room`; [bookings.spec.ts](../tests/api/bookings.spec.ts) `GET /api/booking/{id} › returns the booking`; [messages.spec.ts](../tests/api/messages.spec.ts) `GET /api/message/{id} › returns the full message`.
 
 ## KI-2: guest messages listed without authentication
 
 - **Endpoint:** `GET /api/message`
-- **Esperado:** 401 sem o cookie `token`, como `GET /api/booking`.
-- **Observado:** 200 com id, nome do hóspede, assunto e status de leitura de todas as mensagens (`GET /api/message/count` também é público).
-- **Impacto:** segurança e privacidade: qualquer pessoa lê quem escreveu ao hotel e sobre o quê. As reservas com e-mail também geram mensagens ("You have a new booking!"), expondo o nome de quem reservou.
-- **Teste:** [messages.spec.ts](../tests/api/messages.spec.ts), `GET /api/message › requires authentication`.
+- **Expected:** 401 without the `token` cookie, like `GET /api/booking`.
+- **Actual:** 200 with the ID, guest name, subject and read status of every message (`GET /api/message/count` is public too).
+- **Impact:** security and privacy: anyone can read who wrote to the hotel and about what. Bookings with an email address also create messages ("You have a new booking!"), exposing the name of whoever booked.
+- **Test:** [messages.spec.ts](../tests/api/messages.spec.ts), `GET /api/message › requires authentication`.
 
 ## KI-3: logout does not invalidate the token
 
 - **Endpoint:** `POST /api/auth/logout`
-- **Esperado:** depois do logout, o token deixa de valer: `POST /api/auth/validate` com ele responde 403.
-- **Observado:** o logout responde `200 {"success":true}`, mas o token continua válido: `validate` responde `200 {"valid":true}` e o token ainda abre endpoints protegidos (`GET /api/booking?roomid=1` com o cookie `token` → 200; sem token → 401).
-- **Impacto:** segurança. Um token vazado não pode ser revogado pelo usuário.
-- **Teste:** [tests/api/auth.spec.ts](../tests/api/auth.spec.ts), `POST /api/auth/logout › invalidates the token`.
+- **Expected:** after logout, the token is no longer valid: `POST /api/auth/validate` with it returns 403.
+- **Actual:** logout returns `200 {"success":true}`, but the token stays valid: `validate` returns `200 {"valid":true}` and the token still opens protected endpoints (`GET /api/booking?roomid=1` with the `token` cookie → 200; without it → 401).
+- **Impact:** security. A leaked token cannot be revoked by its user.
+- **Test:** [auth.spec.ts](../tests/api/auth.spec.ts), `POST /api/auth/logout › invalidates the token`.
 
 ## KI-4: check-out before check-in returns 409
 
 - **Endpoint:** `POST /api/booking`
-- **Esperado:** 400, como os outros dados inválidos da reserva (nome curto → `400 {"errors":[...]}`).
-- **Observado:** `409 {"error":"Failed to create booking"}`, a mesma resposta de uma reserva sobreposta.
-- **Impacto:** quem chama a API não distingue "datas inválidas" de "quarto ocupado"; a mensagem não diz o que corrigir.
-- **Teste:** [bookings.spec.ts](../tests/api/bookings.spec.ts), `POST /api/booking › rejects a check-out before the check-in with 400`.
+- **Expected:** 400, like the other invalid booking data (a short name → `400 {"errors":[...]}`).
+- **Actual:** `409 {"error":"Failed to create booking"}`, the same response as an overlapping booking.
+- **Impact:** API clients cannot tell "invalid dates" from "room already booked"; the message does not say what to fix.
+- **Test:** [bookings.spec.ts](../tests/api/bookings.spec.ts), `POST /api/booking › rejects a check-out before the check-in with 400`.
 
 ## KI-5: form fields without associated labels
 
-- **Página:** formulário de contato da home (a label "Message" não está associada ao textarea) e formulário de criar quarto no admin (campos sem label).
-- **Esperado:** cada campo com nome acessível, encontrável por `getByLabel`.
-- **Observado (spike):** o textarea só é encontrável pelo test id `ContactDescription`.
-- **Impacto:** acessibilidade: leitores de tela não anunciam o campo.
-- **Teste:** E2E na Missão 5 (#6), nas jornadas de contato e de admin de quartos (bug de navegador; não se testa pela API).
+- **Pages:** the contact form on the home page (the "Message" label is not associated with its textarea) and the create-room form in the admin area (fields without labels).
+- **Expected:** every field has an accessible name, so it can be found by its label.
+- **Actual:** the textarea can only be found by its test ID `ContactDescription`.
+- **Impact:** accessibility: screen readers do not announce the field.
+- **Test:** planned in the browser (E2E) suite, in the contact and room-admin journeys (#6). This is a browser defect; the API cannot test it.
 
 ## KI-6: availability ignores partially overlapping bookings
 
 - **Endpoint:** `GET /api/room?checkin=&checkout=`
-- **Esperado:** um quarto com reserva que cruza qualquer noite do período pedido fica fora da lista.
-- **Observado:** o quarto só sai da lista quando o período pedido **envolve** a reserva inteira. Reserva de 10 a 13: pedir 10–13 ou 08–16 o exclui; pedir 11–12 (dentro), 12–15 (cruza o fim) ou 08–11 (cruza o início) o lista como livre. Reservar esse período depois dá 409.
-- **Impacto:** o hóspede vê o quarto disponível e a reserva falha.
-- **Teste:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `GET /api/room › leaves out a room booked for part of the requested dates`.
+- **Expected:** a room with a booking that covers any night of the requested period is left out of the list.
+- **Actual:** the room is left out only when the requested period **contains** the whole booking. With a booking from the 10th to the 13th: requesting 10–13 or 08–16 leaves it out; requesting 11–12 (inside), 12–15 (overlapping the end) or 08–11 (overlapping the start) lists it as available. Booking that period afterward returns 409.
+- **Impact:** guests see the room as available and their booking fails.
+- **Test:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `GET /api/room › leaves out a room booked for part of the requested dates`.
