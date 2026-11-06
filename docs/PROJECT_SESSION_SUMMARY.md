@@ -8,11 +8,11 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item           | Estado                                                                                                           |
 | -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | Extra — ignore de majors do TypeScript (#13), concluída com o merge deste PR                                     |
-| Próxima missão | 3 — API: rooms/bookings/messages (#4)                                                                            |
+| Missão atual   | 3 — API: rooms/bookings/messages (#4), concluída com o merge deste PR                                            |
+| Próxima missão | 4 — E2E: fundação (#5)                                                                                           |
 | PRs abertos    | nenhum após o merge (#11 do Dependabot fechado; Dependabot pode abrir outros: tratar no início do chat)          |
 | Portões        | `npm run check` (job `check`, inclui a sentinela de ignores) e testes de API (job `api`); `ci-passed` no ruleset |
-| Testes         | API: autenticação (7, um deles `test.fail()` do KI-3); E2E a partir da Missão 4                                  |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E na Missão 4 |
 
 ## Plano de missões
 
@@ -210,3 +210,46 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Revisor** (agente `reviewer`, diff completo): sem bugs de correção; conferiu `semver.intersects` nos casos de borda (prerelease só, range sem limite superior, range inválido lança). Dois achados, ambos aplicados: (1) faltava o procedimento de quando a sentinela dispara: corrigir no branch do Dependabot o deixaria sem rebase; agora mensagem, script, `dependabot.yml` e este resumo mandam corrigir num PR próprio e usar `@dependabot rebase`; (2) a sentinela só reconhecia a forma exata do `ignore` e ficaria muda com uma regra reescrita: agora qualquer entrada `typescript` conta (RED 5), e a ausência de `ignore` aparece no log.
 
 **Próxima missão:** 3 — API: rooms/bookings/messages (#4).
+
+## Missão 3 — API: rooms/bookings/messages (#4)
+
+**Entregue:** clientes `RoomApi`, `BookingApi` e `MessageApi` com contratos zod; `src/api/schemas.ts` com os três formatos de erro do app e o `authCookie`; fábricas de dados (`src/data/factories.ts`: nomes com sufixo, datas aleatórias de 1 a 10 anos à frente); fixtures `roomApi`, `bookingApi`, `messageApi` e `room` (um quarto por teste); helper `expectFound`; 20 testes novos (27 no total); `docs/KNOWN_ISSUES.md` com KI-1 a KI-6.
+
+**Mapa da API corrigido pela sondagem** (o do spike vale, com estes ajustes):
+
+| Endpoint                         | Observado na Missão 3                                                                                                                                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/room`                 | 200 `{success:true}`, **sem o id**: a fixture acha o quarto pelo nome único na listagem; sem token → 401 `{errors:[...]}`                                                                      |
+| `GET /api/room?checkin&checkout` | só exclui o quarto quando o período **envolve** a reserva (KI-6)                                                                                                                               |
+| `POST /api/booking`              | 201 com a reserva (sem e-mail e telefone); sobreposição e checkout antes do check-in → 409 `{error}`; nomes fora do tamanho → 400 `{errors:[...]}`; check-in no dia do checkout anterior → 201 |
+| `GET /api/booking?roomid=`       | sem token → 401 `{error}` (formato diferente do 401 de room)                                                                                                                                   |
+| `GET /api/message/{id}`          | 500, como room e booking (KI-1 ampliado); `GET /api/message/count` é público                                                                                                                   |
+
+**Decisões:**
+
+- **Um quarto por teste (fixture `room`)** em vez de reservar os quartos do seed com datas aleatórias: as regras de sobreposição e disponibilidade não dependem de reservas de outros testes nem de outras pessoas (test isolation). Custo: o ambiente acumula quartos até a próxima limpeza; não dá para apagar (KI-1, e o `DELETE` foi barrado de propósito: não se apaga nada no ambiente compartilhado, nem o que se criou, enquanto a regra não for decidida).
+- **Clientes devolvem a `APIResponse` crua e recebem o token opcional** (`authCookie`): o mesmo método serve ao caso autenticado e ao 401, sem um cliente "anônimo" paralelo.
+- **`type` do quarto como `z.string()` na resposta** (tolerant reader): tipo novo não quebra os clientes.
+- **`test.fail()` de bug cuja correção tem formato desconhecido** (KI-2, KI-4) afirma só o status, com o helper `expectStatus`: não inventamos o corpo de uma resposta que ainda não existe, nem exigimos JSON (com `expectJson`, uma correção que devolvesse um 401 vazio continuaria falhando pelo `Content-Type` e nunca seria avisada); a mensagem de falha traz URL e corpo.
+- **`KNOWN_ISSUES` exportado de `tests/fixtures.ts`**, usado por todos os specs.
+- **Reserva no passado aceita (201)** e reserva sem e-mail aceita: registradas aqui como achados, **sem** `test.fail()`: não há requisito escrito que as proíba, e um teste que afirma uma regra inventada não prova nada.
+
+**RED:**
+
+1. Teste antes do suporte: os três specs escritos antes dos clientes → `Cannot find module '...\src\api\booking-api.ts'`.
+2. Uma mutação por teste (script que confere que o trecho mutado aparece **exatamente uma vez**, lição das sondas erradas anteriores), cada uma desfeita. Exemplos: sobreposição `stayAfter(stay, -2)`→`0` → `Expected: 409 Received: 201`; vizinha `stayAfter(stay)`→`-1` → `Expected: 201 Received: 409`; tipo `'Castle'`→`'Suite'` → `Expected: 400 Received: 200`; nomes `'Al'`→`'Alice'` → falta `size must be between 3 and 30`; mensagem `phone: '1'` → `Expected: 200 Received: 400` com `Body: ["Phone must be between 11 and 21 characters."]`; quarto listado `toBeGreaterThan(1000)` → `Received: 16`; listagem de mensagens `read: true` → `toContainEqual` reprova; 401s com mensagem trocada → `Received: "Authentication required"`.
+3. Cada `test.fail()` trocado por `test` falha **pelo bug**: KI-1 `Expected: 200 Received: 500` (`Body: Internal Server Error`) em room, booking e message; KI-2 `Expected: 401 Received: 200` com a lista de mensagens no corpo; KI-4 `Expected: 400 Received: 409`; KI-6 `Expected value: not 21` com o quarto 21 na lista.
+4. **Mutação sobrevivente virou bug:** na disponibilidade, trocar o período "livre" (`stayAfter(stay, 7)`) por um sobreposto (`-1`) **continuou verde**. Sondagem num quarto novo (reserva 10–13): o filtro só exclui 10–13 e 08–16; 11–12, 12–15 e 08–11 aparecem livres → KI-6. A mutação certa da asserção (consultar as mesmas datas) falha com `Expected value: 20`.
+5. Asserção da listagem de reservas trocada para `toContainEqual` (ver Achados): mutação `depositpaid: true` → `toContainEqual` reprova; suíte com `--repeat-each=3`: 81 de 81.
+
+**Achados:**
+
+- **O ambiente limpa os dados de tempos em tempos, e não de forma atômica:** quartos apagados com ids reiniciados enquanto as reservas ficam (um quarto novo "herdou" 11 reservas do quarto anterior de mesmo id e derrubou `toEqual([created])`), e em outro momento reservas apagadas com o quarto mantido. Consequência: **nunca afirmar que um recurso novo está vazio**; afirmar só sobre o que o teste criou. A janela de datas foi ampliada para 10 anos para tornar improvável colidir com uma reserva herdada; os retries do CI marcam o raro caso como `flaky`.
+- **Três formatos de erro** no mesmo app (`{error}`, `{errors:[]}`, array puro); cada teste declara o seu (`schemas.ts`).
+- Criar reserva com e-mail gera uma mensagem "You have a new booking!" no admin, que o KI-2 expõe sem autenticação.
+- O `DELETE` de sondagem foi barrado pelo modo automático do Claude Code ("Modify Shared Resources"): coerente com a regra de não apagar no ambiente compartilhado.
+- Windows: `python` no Git Bash é o atalho da Microsoft Store e trava esperando interação; não usar (o projeto não precisa de Python).
+
+**Revisor** (agente `reviewer`, diff completo): três achados, todos aplicados. (1) Os `test.fail()` do KI-2 e do KI-4 usavam `expectJson(..., z.unknown())`, que também exige JSON: uma correção com 401 vazio ou em texto continuaria falhando e nunca seria avisada. Novo helper `expectStatus` (ensinado ao `playwright/expect-expect`); RED refeito trocando por `test`: `Expected: 400 Received: 409` e `Expected: 401 Received: 200`. (2) `lists rooms matching the contract` afirmava `rooms.length > 0`, presumindo os quartos do seed, que a limpeza do ambiente pode apagar; agora usa a fixture `room` e `toContainEqual(room)` (mutação `roomPrice: 999` reprova). (3) O KI-5 apontava para a Missão 4, mas contato e admin de quartos são da Missão 5 (#6); corrigido. Suíte com `--repeat-each=3`: 81 de 81.
+
+**Próxima missão:** 4 — E2E: fundação (#5). Os clientes de API servem para preparar dados dos testes de navegador (criar quarto e reserva pela API, verificar na UI). O KI-5 ganha o seu teste na Missão 5 (#6), com as jornadas de contato e admin.

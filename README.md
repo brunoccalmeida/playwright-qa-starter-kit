@@ -27,7 +27,8 @@ Configuration comes from environment variables ([.env.example](.env.example)), v
 
 - **Typed clients** per resource live in [src/api/](src/api/) and return the raw response.
 - **`expectJson(response, status, schema)`** asserts the status, the JSON content type and the [zod](https://zod.dev) contract, and returns the typed body; failures show the URL and the raw body.
-- **Fixtures** ([tests/fixtures.ts](tests/fixtures.ts)) give each test its own data, such as a fresh `adminToken`.
+- **Fixtures** ([tests/fixtures.ts](tests/fixtures.ts)) give each test its own data, such as a fresh `adminToken` and a `room` nobody else books.
+- **Data factories** ([src/data/factories.ts](src/data/factories.ts)) build unique payloads (name suffixes, random future dates): the target app is a shared environment, so tests never rely on existing data or on each other. Never assert that a new resource is empty: the environment periodically wipes data and can hand a new room the bookings of an old one.
 - **Known application bugs** are tests marked `test.fail()` that link to [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md): they assert the correct behaviour, and start "failing" when the bug is fixed.
 
 ## Continuous integration
