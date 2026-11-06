@@ -18,6 +18,9 @@ export default defineConfig({
     // stay local; in CI, expectJson's failure message (URL + response body)
     // is the diagnostic. In the browser the trace would also hold the
     // password typed into the login form and the admin session cookie.
+    // Traces off is not enough for a published report: Playwright titles
+    // the step `Fill "<value>"`, so a report that lists steps (HTML, blob,
+    // JSON) shows the password; the CI reporters (github, list) do not.
     trace: env.CI ? 'off' : 'retain-on-failure',
   },
   projects: [

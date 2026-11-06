@@ -5,7 +5,9 @@ import { expect, test } from './fixtures.ts';
 // The home page renders only the first three rooms of GET /api/room
 // (`rooms.slice(0, 3)` in the page's bundle). A room created by a test gets
 // a later id and never shows there, so this test reads the rooms the page
-// will show instead of creating one.
+// will show instead of creating one. If the shared environment wipes its
+// data between the API read and the page load, the lists differ and the
+// test fails with no app bug (a retry in CI recovers).
 const FEATURED_ROOMS = 3;
 
 test.describe('Home page', () => {

@@ -317,7 +317,7 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 - **Page Object expõe localizadores e ações; o teste afirma.** Exceção única: `expectLoaded()`, o "pronto" da página, que concentra o achado do sinal confiável num só lugar. O `expect-expect` aprendeu o nome numa lista explícita, não por padrão (`^expect`): explícito é melhor que implícito.
 - **Home sem criar dados:** o teste lê `GET /api/room` na hora e confere tipo, preço e link `/reservation/{id}` dos 3 primeiros cartões, na ordem. Não presume quais quartos existem e não deixa lixo no ambiente. A descrição única que cheguei a pôr na fábrica foi desfeita (YAGNI).
 - **Home mostrar só 3 quartos é achado, não KI:** na prática o hóspede não vê nem reserva o 4º quarto em diante pela home, mas não há requisito escrito (mesmo critério da Missão 3).
-- **Sem cache de navegador e sem artefato no CI:** cache, pela fonte acima; artefato, porque o trace guardaria a senha digitada e o cookie de sessão (mesmo motivo do job `api`). **Missão 6:** o relatório publicado precisa resolver isso antes de incluir trace ou screenshots.
+- **Sem cache de navegador e sem artefato no CI:** cache, pela fonte acima; artefato, porque o trace guardaria a senha digitada e o cookie de sessão (mesmo motivo do job `api`). **Missão 6:** desligar o trace não basta para publicar o relatório. O Playwright intitula o passo `Fill "<valor>"` (`Frame.fill` com `title: 'Fill "{value}"'` no `playwright-core`), então qualquer relatório que liste passos (HTML, blob, JSON) mostra a senha de admin do `setup` e do teste de login válido. Os reporters do CI hoje (`github`, `list`) não listam passos. A Missão 6 precisa resolver isso antes de publicar.
 
 **RED:**
 
@@ -336,5 +336,7 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 - **Sondar a UI antes de escrever o Page Object** evitou três sinais falsos de "logado" (URL, "Create", "Logout"). A amostragem a cada 100 ms tornou visível um estado intermediário que uma leitura única não mostraria.
 - `\?` dentro de template literal num heredoc virou `\?` (`no-useless-escape`); `[?]` na regex é mais legível e não depende de escape.
 - Para sondar fora do repositório, o script importa o `playwright-core` do projeto por URL `file:///` (ESM ignora `NODE_PATH`) e roda via `powershell.exe` com o `PATH` recarregado, porque o Git Bash não enxerga o Node.
+
+**Revisor** (agente `reviewer`, diff completo): sem achado bloqueante; escopo da #5 cumprido. Dois achados, ambos aplicados. (1) Médio: a pendência da Missão 6 citava só o trace, mas o título do passo `fill` carrega a senha em qualquer relatório com passos, mesmo com o trace desligado (conferido no `playwright-core` instalado). Agora a pendência está completa aqui, no `ci.yml` e no `playwright.config.ts`. (2) Baixo: o teste da home lê a API antes de abrir a página, e um wipe do ambiente nessa janela o derrubaria sem bug no app. Ficou documentado no comentário do teste; a janela é de milissegundos e o retry do CI cobre, então o código não mudou.
 
 **Próxima missão:** 5 — E2E: jornadas (#6): contato (com o KI-5 visto falhando antes do `test.fail()`), reserva (com `page.route` contornando o KI-1) e admin de quartos, reaproveitando `ADMIN_SESSION`, os Page Objects e a preparação de dados pela API.

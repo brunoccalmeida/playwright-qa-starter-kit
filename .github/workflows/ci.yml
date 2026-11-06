@@ -105,7 +105,10 @@ jobs:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       # No artifact, as in the api job: a trace would hold the typed password
-      # and the session cookie. The published report comes with Mission 6.
+      # and the session cookie, and any report that lists steps (HTML, blob,
+      # JSON) shows the password too: Playwright titles the step
+      # `Fill "<value>"`, even with traces off. The published report comes
+      # with Mission 6, which must solve this first.
 
   # npm audit queries the GitHub Advisory Database, the same source as the
   # Dependabot alerts enabled on this repository. Those alerts watch main
