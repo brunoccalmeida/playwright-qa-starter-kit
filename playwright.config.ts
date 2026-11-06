@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import { env } from './src/config/env.ts';
 
 export default defineConfig({
@@ -16,8 +16,27 @@ export default defineConfig({
     // A trace stores every request body, including the login credentials,
     // in plain text; secret masking covers CI logs, not artifacts. Traces
     // stay local; in CI, expectJson's failure message (URL + response body)
-    // is the diagnostic.
+    // is the diagnostic. In the browser the trace would also hold the
+    // password typed into the login form and the admin session cookie.
+    // Traces off is not enough for a published report: Playwright titles
+    // the step `Fill "<value>"`, so a report that lists steps (HTML, blob,
+    // JSON) shows the password; the CI reporters (github, list) do not.
     trace: env.CI ? 'off' : 'retain-on-failure',
   },
-  projects: [{ name: 'api', testDir: './tests/api' }],
+  projects: [
+    { name: 'api', testDir: './tests/api' },
+    // Logs in once and saves the admin session (playwright.dev/docs/auth)
+    {
+      name: 'setup',
+      testDir: './tests/e2e',
+      testMatch: /.*\.setup\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'e2e',
+      testDir: './tests/e2e',
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
 });

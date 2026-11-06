@@ -6,13 +6,13 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | Extra — KNOWN_ISSUES em inglês e `npm audit` no CI (#17), concluída com o merge deste PR; Missão 3 concluída (#16)                          |
-| Próxima missão | 4 — E2E: fundação (#5), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                               |
-| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                |
-| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (job `api`) e `npm audit` (job `audit`); `ci-passed` no ruleset |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E na Missão 4                            |
+| Item           | Estado                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Missão atual   | 4 — E2E: fundação (#5), concluída com o merge deste PR                                                                                           |
+| Próxima missão | 5 — E2E: jornadas (#6), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                    |
+| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                     |
+| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`) e `npm audit` (`audit`); `ci-passed` no ruleset |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 4 (home, login, sessão salva) + `setup`    |
 
 ## Plano de missões
 
@@ -291,3 +291,53 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Achado do chat:** `git revert` não aceita `-q` (a reversão não aconteceu, e o encadeamento com `&&` evitou efeito colateral). E `python` no Git Bash travou de novo (atalho da Microsoft Store, já registrado na Missão 3): não o chame.
 
 **Revisor** (agente `reviewer`, diff completo): um achado, aplicado. No KI-5, a tradução trocou "Observado (spike)" por "Actual", apresentando ao cliente como fato atual uma observação que nenhum teste reverificou. Agora é "Actual (exploratory testing, not yet covered by a test)". Na Missão 5 (#6), o KI-5 precisa ser visto falhando de novo antes de receber o `test.fail()`.
+
+## Missão 4 — E2E: fundação (#5)
+
+**Entregue:** projetos `setup` e `e2e` (Chromium) no `playwright.config.ts`; Page Objects em `src/pages/` (`HomePage`, `AdminLoginPage`, `AdminRoomsPage`); fixtures de página em `tests/e2e/fixtures.ts`, estendendo as de API; `admin.setup.ts` salva a sessão de admin em `playwright/.auth/admin.json` (no `.gitignore`); 4 testes E2E (home, login válido, senha errada, sessão salva); script `test:e2e`; job `e2e` nos `needs` do `ci-passed`; `expectLoaded` ensinado ao `playwright/expect-expect`.
+
+**Fontes consultadas:** [Authentication](https://playwright.dev/docs/auth) (projeto `setup` como dependência, `testMatch: /.*\.setup\.ts/`, `playwright/.auth` no `.gitignore`, reset com `storageState: { cookies: [], origins: [] }`); [Continuous Integration](https://playwright.dev/docs/ci) ("Caching browser binaries is not recommended, since the amount of time it takes to restore the cache is comparable to the time it takes to download the binaries").
+
+**Sondagem da UI antes do código** (scripts descartáveis no scratchpad, lendo a árvore de acessibilidade com `ariaSnapshot`, que é o que o `getByRole` enxerga):
+
+| Achado                                                                                                         | Consequência                                                                                     |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `POST /api/auth/login` devolve o token no corpo, **sem `Set-Cookie`**; o JavaScript da página grava o `token`  | `request.storageState()` sairia vazio: o `setup` faz login **pela UI**                           |
+| O botão "Logout" aparece também na tela de login                                                               | Não serve como prova de sessão                                                                   |
+| Sem sessão, `/admin/rooms` mantém a URL ~300 ms (e pode desenhar o formulário "Create") antes de ir a `/admin` | `toHaveURL` e o botão "Create" dariam falso positivo                                             |
+| Os links "Report", "Branding", "Messages" só aparecem com sessão válida                                        | Sinal do `expectLoaded()`, seguido do `toHaveURL`                                                |
+| A página sempre tem um `alert` vazio; credencial errada → `alert` "Invalid credentials"                        | `getByRole('alert').filter({ hasText: /\S/ })`                                                   |
+| A home desenha só os **3 primeiros** quartos de `GET /api/room` (`a.slice(0,3)` no bundle)                     | Quarto criado por teste nunca aparece ali: o teste lê a API e confere os 3 primeiros             |
+| Cartões de quarto sem papel ARIA de agrupamento nem test id; a home mostra tipo e descrição, não o nome        | Contêiner pela classe de componente `.room-card`; dentro dele, localizadores voltados ao usuário |
+
+**Decisões:**
+
+- **Login do `setup` pela UI, não pela API:** a documentação indica a API quando ela é "easier/faster", e aqui não é: o login pela API exigiria montar à mão o cookie que o app grava pelo JavaScript (nome, domínio, `path`), acoplando o kit a um detalhe interno que pode mudar em silêncio. A UI custa ~2 s uma vez por execução.
+- **Convidado por padrão, admin por opt-in** (`test.use({ storageState: ADMIN_SESSION })`): uma jornada de hóspede roda como hóspede (menor privilégio, realismo). O padrão da documentação (sessão para o projeto todo e reset por arquivo) inverteria isso.
+- **Page Object expõe localizadores e ações; o teste afirma.** Exceção única: `expectLoaded()`, o "pronto" da página, que concentra o achado do sinal confiável num só lugar. O `expect-expect` aprendeu o nome numa lista explícita, não por padrão (`^expect`): explícito é melhor que implícito.
+- **Home sem criar dados:** o teste lê `GET /api/room` na hora e confere tipo, preço e link `/reservation/{id}` dos 3 primeiros cartões, na ordem. Não presume quais quartos existem e não deixa lixo no ambiente. A descrição única que cheguei a pôr na fábrica foi desfeita (YAGNI).
+- **Home mostrar só 3 quartos é achado, não KI:** na prática o hóspede não vê nem reserva o 4º quarto em diante pela home, mas não há requisito escrito (mesmo critério da Missão 3).
+- **Sem cache de navegador e sem artefato no CI:** cache, pela fonte acima; artefato, porque o trace guardaria a senha digitada e o cookie de sessão (mesmo motivo do job `api`). **Missão 6:** desligar o trace não basta para publicar o relatório. O Playwright intitula o passo `Fill "<valor>"` (`Frame.fill` com `title: 'Fill "{value}"'` no `playwright-core`), então qualquer relatório que liste passos (HTML, blob, JSON) mostra a senha de admin do `setup` e do teste de login válido. Os reporters do CI hoje (`github`, `list`) não listam passos. A Missão 6 precisa resolver isso antes de publicar.
+
+**RED:**
+
+1. Teste antes do suporte: config, fixtures e specs escritos antes dos Page Objects → `Cannot find module '...\src\pages\admin-login-page.ts'`.
+2. Premissa errada vista falhando: a primeira versão do teste da home criava um quarto e o procurava na página → `element(s) not found`; o `error-context.md` mostrou só 3 cartões, e o bundle, o `slice(0,3)`. Teste redesenhado (ver Decisões).
+3. Uma mutação por teste (script que confere o trecho mutado **exatamente uma vez** e restaura), cada uma desfeita:
+   - sessão salva: sem o `test.use({ storageState })` → `getByRole('navigation').getByRole('link', { name: 'Report' })` `element(s) not found`. Prova que a sessão salva é o que autentica **e** que o `expectLoaded` não é enganado pelo estado intermediário de `/admin/rooms`;
+   - login válido: senha `'x'` → mesmo `element(s) not found` no link "Report";
+   - senha errada: texto `'Wrong credentials'` → `Expected: "Wrong credentials" Received: "Invalid credentials"`; heading `toBeHidden` → `Received: visible`;
+   - home: preço `+1` → `Expected substring: "£101 per night"` (recebido `£100`); link `roomid + 1` → `Expected pattern: /^\/reservation\/2[?]/ Received string: "/reservation/1?..."`; tipo `'Family'` → `element(s) not found`; contagem `FEATURED_ROOMS + 1` → `Expected: 4 Received: 3`.
+4. Lint: os testes que só usam `expectLoaded()` reprovaram em `playwright/expect-expect` até a regra aprender o nome.
+5. Estabilidade: suíte completa com `--repeat-each=3`: 94 de 94.
+6. CI: commit-sonda no PR com o preço `+1` no teste da home, depois revertido. Run 42308064426: `e2e: failure` (`Expected substring: "£101 per night"`, nas 3 tentativas com os retries), `ci-passed: failure`, PR `BLOCKED`; `check`, `api` e `audit` verdes. No mesmo run, o `setup` e os outros 3 testes passaram: o login pela UI funciona no CI com os secrets.
+
+**Achados:**
+
+- **Sondar a UI antes de escrever o Page Object** evitou três sinais falsos de "logado" (URL, "Create", "Logout"). A amostragem a cada 100 ms tornou visível um estado intermediário que uma leitura única não mostraria.
+- `\?` dentro de template literal num heredoc virou `\?` (`no-useless-escape`); `[?]` na regex é mais legível e não depende de escape.
+- Para sondar fora do repositório, o script importa o `playwright-core` do projeto por URL `file:///` (ESM ignora `NODE_PATH`) e roda via `powershell.exe` com o `PATH` recarregado, porque o Git Bash não enxerga o Node.
+
+**Revisor** (agente `reviewer`, diff completo): sem achado bloqueante; escopo da #5 cumprido. Dois achados, ambos aplicados. (1) Médio: a pendência da Missão 6 citava só o trace, mas o título do passo `fill` carrega a senha em qualquer relatório com passos, mesmo com o trace desligado (conferido no `playwright-core` instalado). Agora a pendência está completa aqui, no `ci.yml` e no `playwright.config.ts`. (2) Baixo: o teste da home lê a API antes de abrir a página, e um wipe do ambiente nessa janela o derrubaria sem bug no app. Ficou documentado no comentário do teste; a janela é de milissegundos e o retry do CI cobre, então o código não mudou.
+
+**Próxima missão:** 5 — E2E: jornadas (#6): contato (com o KI-5 visto falhando antes do `test.fail()`), reserva (com `page.route` contornando o KI-1) e admin de quartos, reaproveitando `ADMIN_SESSION`, os Page Objects e a preparação de dados pela API.

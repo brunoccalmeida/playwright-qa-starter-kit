@@ -15,3 +15,6 @@ Thumbs.db
 
 # Personal editor settings (not project configuration)
 .vscode/
+
+# Saved browser sessions (grant access to the admin account)
+playwright/.auth/

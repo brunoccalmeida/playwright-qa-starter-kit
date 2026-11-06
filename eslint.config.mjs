@@ -26,10 +26,11 @@ export default defineConfig(
       'playwright/no-focused-test': 'error',
       'playwright/no-wait-for-timeout': 'error',
       'playwright/prefer-web-first-assertions': 'error',
-      // expectJson and expectStatus (src/api/expect-json.ts) assert the response
+      // expectJson and expectStatus (src/api/expect-json.ts) assert the response;
+      // a page object's expectLoaded asserts the page reached its ready state
       'playwright/expect-expect': [
         'error',
-        { assertFunctionNames: ['expectJson', 'expectStatus'] },
+        { assertFunctionNames: ['expectJson', 'expectStatus', 'expectLoaded'] },
       ],
     },
   },
