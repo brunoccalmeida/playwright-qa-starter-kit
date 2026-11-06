@@ -286,3 +286,5 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **RED:**
 
 1. Local: sem o `override` do `minimatch` e com o lockfile regenerado (`npm install --package-lock-only`), `npm audit` sai com código 1 e `GHSA-g3hv-75wg-m249` (moderate); restaurado, `found 0 vulnerabilities`, código 0.
+
+**Revisor** (agente `reviewer`, diff completo): um achado, aplicado. No KI-5, a tradução trocou "Observado (spike)" por "Actual", apresentando ao cliente como fato atual uma observação que nenhum teste reverificou. Agora é "Actual (exploratory testing, not yet covered by a test)". Na Missão 5 (#6), o KI-5 precisa ser visto falhando de novo antes de receber o `test.fail()`.

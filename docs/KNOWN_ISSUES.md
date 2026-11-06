@@ -44,7 +44,7 @@ Issues are numbered in the order they were found.
 
 - **Pages:** the contact form on the home page (the "Message" label is not associated with its textarea) and the create-room form in the admin area (fields without labels).
 - **Expected:** every field has an accessible name, so it can be found by its label.
-- **Actual:** the textarea can only be found by its test ID `ContactDescription`.
+- **Actual (exploratory testing, not yet covered by a test):** the textarea can only be found by its test ID `ContactDescription`.
 - **Impact:** accessibility: screen readers do not announce the field.
 - **Test:** planned in the browser (E2E) suite, in the contact and room-admin journeys (#6). This is a browser defect; the API cannot test it.
 
