@@ -82,7 +82,9 @@ test.describe('GET /api/booking?roomid=', () => {
     const response = await bookingApi.listByRoom(room.roomid, adminToken);
 
     const { bookings } = await expectJson(response, 200, bookingListSchema);
-    expect(bookings).toEqual([created]);
+    // Not toEqual([created]): the shared environment reuses room ids after a
+    // cleanup and keeps the old bookings, so a new room may already have some
+    expect(bookings).toContainEqual(created);
   });
 
   test('requires authentication', async ({ bookingApi, room }) => {

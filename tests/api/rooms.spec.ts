@@ -26,6 +26,26 @@ test.describe('GET /api/room', () => {
     expect(booked.rooms.map((r) => r.roomid)).not.toContain(room.roomid);
     expect(free.rooms.map((r) => r.roomid)).toContain(room.roomid);
   });
+
+  test.fail(
+    'leaves out a room booked for part of the requested dates',
+    {
+      annotation: {
+        type: 'issue',
+        description: `${KNOWN_ISSUES}#ki-6-availability-ignores-partially-overlapping-bookings`,
+      },
+    },
+    async ({ roomApi, bookingApi, room }) => {
+      const stay = futureStay(3);
+      await expectJson(await bookingApi.create(newBooking(room.roomid, stay)), 201, bookingSchema);
+
+      // Starts on the last night of the booking: POST /api/booking rejects it with 409
+      const overlapping = stayAfter(stay, -1);
+      const { rooms } = await expectJson(await roomApi.list(overlapping), 200, roomListSchema);
+
+      expect(rooms.map((r) => r.roomid)).not.toContain(room.roomid);
+    },
+  );
 });
 
 test.describe('POST /api/room', () => {

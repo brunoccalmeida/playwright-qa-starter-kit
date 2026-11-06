@@ -19,9 +19,13 @@ function addDays(isoDay: string, days: number): string {
   return isoDate(new Date(Date.parse(isoDay) + days * DAY_MS));
 }
 
-/** A stay starting on a random day one to three years ahead. */
+/**
+ * A stay starting on a random day one to ten years ahead. The wide window
+ * makes a clash unlikely with bookings left on a reused room id (see the
+ * `room` fixture).
+ */
 export function futureStay(nights = 2): Stay {
-  const daysAhead = 365 + Math.floor(Math.random() * 730);
+  const daysAhead = 365 + Math.floor(Math.random() * 9 * 365);
   const checkin = isoDate(new Date(Date.now() + daysAhead * DAY_MS));
   return { checkin, checkout: addDays(checkin, nights) };
 }

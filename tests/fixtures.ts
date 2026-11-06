@@ -19,9 +19,13 @@ type ApiFixtures = {
   /** A fresh admin token per test: logging out in one test cannot affect another. */
   adminToken: string;
   /**
-   * A room of the test's own: nobody else books it, so booking rules
-   * (overlap, availability) never depend on shared data. It is not deleted
-   * afterwards: DELETE /api/room/{id} is broken (KI-1).
+   * A room of the test's own: no other test books it, so booking rules
+   * (overlap, availability) do not depend on other tests. It may not be
+   * empty, though: the shared environment periodically deletes rooms,
+   * restarts their ids and keeps the bookings, so a new room can inherit
+   * old ones. Tests use random dates (`futureStay`) and never assert that
+   * the room has no bookings. The room is not deleted afterwards:
+   * DELETE /api/room/{id} returned 500 in the spike (KI-1).
    */
   room: Room;
 };
