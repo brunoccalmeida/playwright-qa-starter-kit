@@ -6,10 +6,11 @@ import { futureStay, newBooking, newRoom, stayAfter } from '../../src/data/facto
 import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
 
 test.describe('GET /api/room', () => {
-  test('lists rooms matching the contract', async ({ roomApi }) => {
+  test('lists rooms matching the contract', async ({ roomApi, room }) => {
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
 
-    expect(rooms.length).toBeGreaterThan(0);
+    // Its own room, not the seed: the shared environment periodically wipes rooms
+    expect(rooms).toContainEqual(room);
   });
 
   test('leaves out a room already booked for the requested dates', async ({

@@ -46,7 +46,7 @@ Os números seguem a ordem em que os bugs foram encontrados (KI-1 a KI-5 no spik
 - **Esperado:** cada campo com nome acessível, encontrável por `getByLabel`.
 - **Observado (spike):** o textarea só é encontrável pelo test id `ContactDescription`.
 - **Impacto:** acessibilidade: leitores de tela não anunciam o campo.
-- **Teste:** E2E, a partir da Missão 4 (bug de navegador; não se testa pela API).
+- **Teste:** E2E na Missão 5 (#6), nas jornadas de contato e de admin de quartos (bug de navegador; não se testa pela API).
 
 ## KI-6: availability ignores partially overlapping bookings
 

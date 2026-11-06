@@ -230,7 +230,7 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 - **Um quarto por teste (fixture `room`)** em vez de reservar os quartos do seed com datas aleatórias: as regras de sobreposição e disponibilidade não dependem de reservas de outros testes nem de outras pessoas (test isolation). Custo: o ambiente acumula quartos até a próxima limpeza; não dá para apagar (KI-1, e o `DELETE` foi barrado de propósito: não se apaga nada no ambiente compartilhado, nem o que se criou, enquanto a regra não for decidida).
 - **Clientes devolvem a `APIResponse` crua e recebem o token opcional** (`authCookie`): o mesmo método serve ao caso autenticado e ao 401, sem um cliente "anônimo" paralelo.
 - **`type` do quarto como `z.string()` na resposta** (tolerant reader): tipo novo não quebra os clientes.
-- **`test.fail()` de bug cuja correção tem formato desconhecido** (KI-2, KI-4) afirma só o status (`expectJson(..., z.unknown())`): não inventamos o corpo de uma resposta que ainda não existe; a mensagem de falha ainda traz URL e corpo.
+- **`test.fail()` de bug cuja correção tem formato desconhecido** (KI-2, KI-4) afirma só o status, com o helper `expectStatus`: não inventamos o corpo de uma resposta que ainda não existe, nem exigimos JSON (com `expectJson`, uma correção que devolvesse um 401 vazio continuaria falhando pelo `Content-Type` e nunca seria avisada); a mensagem de falha traz URL e corpo.
 - **`KNOWN_ISSUES` exportado de `tests/fixtures.ts`**, usado por todos os specs.
 - **Reserva no passado aceita (201)** e reserva sem e-mail aceita: registradas aqui como achados, **sem** `test.fail()`: não há requisito escrito que as proíba, e um teste que afirma uma regra inventada não prova nada.
 
@@ -250,4 +250,6 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 - O `DELETE` de sondagem foi barrado pelo modo automático do Claude Code ("Modify Shared Resources"): coerente com a regra de não apagar no ambiente compartilhado.
 - Windows: `python` no Git Bash é o atalho da Microsoft Store e trava esperando interação; não usar (o projeto não precisa de Python).
 
-**Próxima missão:** 4 — E2E: fundação (#5). Os clientes de API servem para preparar dados dos testes de navegador (criar quarto e reserva pela API, verificar na UI), e o KI-5 ganha o seu teste lá.
+**Revisor** (agente `reviewer`, diff completo): três achados, todos aplicados. (1) Os `test.fail()` do KI-2 e do KI-4 usavam `expectJson(..., z.unknown())`, que também exige JSON: uma correção com 401 vazio ou em texto continuaria falhando e nunca seria avisada. Novo helper `expectStatus` (ensinado ao `playwright/expect-expect`); RED refeito trocando por `test`: `Expected: 400 Received: 409` e `Expected: 401 Received: 200`. (2) `lists rooms matching the contract` afirmava `rooms.length > 0`, presumindo os quartos do seed, que a limpeza do ambiente pode apagar; agora usa a fixture `room` e `toContainEqual(room)` (mutação `roomPrice: 999` reprova). (3) O KI-5 apontava para a Missão 4, mas contato e admin de quartos são da Missão 5 (#6); corrigido. Suíte com `--repeat-each=3`: 81 de 81.
+
+**Próxima missão:** 4 — E2E: fundação (#5). Os clientes de API servem para preparar dados dos testes de navegador (criar quarto e reserva pela API, verificar na UI). O KI-5 ganha o seu teste na Missão 5 (#6), com as jornadas de contato e admin.

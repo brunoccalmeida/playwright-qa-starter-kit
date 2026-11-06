@@ -38,6 +38,17 @@ export async function expectJson<Schema extends z.ZodType>(
 }
 
 /**
+ * Asserts only the status, with the URL and raw body in the failure message.
+ * For a test.fail() whose fixed response is unknown: expectJson would also
+ * demand a JSON body, so a fix returning, say, an empty 401 would still fail
+ * the test and the fix would never be reported.
+ */
+export async function expectStatus(response: APIResponse, status: number): Promise<void> {
+  const text = await response.text();
+  expect(response.status(), `HTTP status of ${response.url()}\nBody: ${text}`).toBe(status);
+}
+
+/**
  * Returns the item matching the predicate, failing with what was looked for
  * otherwise. The API creates some resources without returning their id, so
  * tests find them by a unique field in the list.

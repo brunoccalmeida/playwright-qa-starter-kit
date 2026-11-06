@@ -1,9 +1,8 @@
 import { bookingListSchema, bookingSchema } from '../../src/api/booking-api.ts';
-import { expectJson } from '../../src/api/expect-json.ts';
+import { expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
 import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
-import { z } from 'zod';
 
 test.describe('POST /api/booking', () => {
   test('creates a booking and echoes it back', async ({ bookingApi, room }) => {
@@ -65,8 +64,8 @@ test.describe('POST /api/booking', () => {
 
       const response = await bookingApi.create(newBooking(room.roomid, reversed));
 
-      // The error format of the fixed endpoint is unknown: only the status matters here
-      await expectJson(response, 400, z.unknown());
+      // The fixed response is unknown: assert only the status (not even JSON)
+      await expectStatus(response, 400);
     },
   );
 });

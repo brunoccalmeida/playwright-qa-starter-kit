@@ -1,4 +1,4 @@
-import { expectFound, expectJson } from '../../src/api/expect-json.ts';
+import { expectFound, expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import {
   messageErrorsSchema,
   messageListSchema,
@@ -7,7 +7,6 @@ import {
 import { successSchema } from '../../src/api/schemas.ts';
 import { newMessage } from '../../src/data/factories.ts';
 import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
-import { z } from 'zod';
 
 test.describe('POST /api/message', () => {
   test('accepts a valid message', async ({ messageApi }) => {
@@ -58,8 +57,8 @@ test.describe('GET /api/message', () => {
     async ({ messageApi }) => {
       const response = await messageApi.list();
 
-      // The error format of the fixed endpoint is unknown: only the status matters here
-      await expectJson(response, 401, z.unknown());
+      // The fixed response is unknown: assert only the status (not even JSON)
+      await expectStatus(response, 401);
     },
   );
 });
