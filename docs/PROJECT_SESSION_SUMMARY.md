@@ -330,6 +330,7 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
    - home: preço `+1` → `Expected substring: "£101 per night"` (recebido `£100`); link `roomid + 1` → `Expected pattern: /^\/reservation\/2[?]/ Received string: "/reservation/1?..."`; tipo `'Family'` → `element(s) not found`; contagem `FEATURED_ROOMS + 1` → `Expected: 4 Received: 3`.
 4. Lint: os testes que só usam `expectLoaded()` reprovaram em `playwright/expect-expect` até a regra aprender o nome.
 5. Estabilidade: suíte completa com `--repeat-each=3`: 94 de 94.
+6. CI: commit-sonda no PR com o preço `+1` no teste da home, depois revertido. Run 42308064426: `e2e: failure` (`Expected substring: "£101 per night"`, nas 3 tentativas com os retries), `ci-passed: failure`, PR `BLOCKED`; `check`, `api` e `audit` verdes. No mesmo run, o `setup` e os outros 3 testes passaram: o login pela UI funciona no CI com os secrets.
 
 **Achados:**
 
