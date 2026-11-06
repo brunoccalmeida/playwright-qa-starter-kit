@@ -6,7 +6,7 @@ Regras que valem em todo chat, compartilhadas entre Claude Code (`CLAUDE.md` imp
 
 ## O que é este projeto
 
-Kit reaproveitável de automação de QA para clientes: Playwright + TypeScript, testes E2E e de API, CI no GitHub Actions e relatório HTML publicado. O app alvo é o [Restful Booker Platform](https://automationintesting.online), um **ambiente compartilhado** (outros testers usam ao mesmo tempo) e com **bugs conhecidos** (`docs/KNOWN_ISSUES.md`, criado na Missão 3; até lá, a lista está em `docs/PROJECT_SESSION_SUMMARY.md`).
+Kit reaproveitável de automação de QA para clientes: Playwright + TypeScript, testes E2E e de API, CI no GitHub Actions e relatório HTML publicado. O app alvo é o [Restful Booker Platform](https://automationintesting.online), um **ambiente compartilhado** (outros testers usam ao mesmo tempo) e com **bugs conhecidos** (`docs/KNOWN_ISSUES.md`).
 
 ## Regra de ouro: todo teste foi visto falhando
 
@@ -49,7 +49,7 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 
 - **Isolamento:** cada teste cria os próprios dados, únicos (datas aleatórias no futuro, nomes com sufixo), e não depende de ordem nem de dados de outro teste. O ambiente é compartilhado: nunca presuma estado prévio nem apague o que não criou.
 - **Localizadores voltados ao usuário:** `getByRole`, `getByLabel`, `getByText`; `getByTestId` só quando não há alternativa acessível (registre o porquê). Nada de CSS/XPath frágil. `getByRole` casa por substring sem diferenciar maiúsculas: use `exact: true` quando houver ambiguidade.
-- **Bug conhecido do app:** `test.fail()` com o link da entrada em `docs/KNOWN_ISSUES.md`, nunca `skip`. Quando o bug for corrigido, o teste passa a "falhar" e avisa.
+- **Bug conhecido do app:** `test.fail()` com o link da entrada em `docs/KNOWN_ISSUES.md`, nunca `skip`. Quando o bug for corrigido, o teste passa a "falhar" e avisa. Antes de marcar, troque temporariamente por `test` e confirme que falha **pelo motivo do bug**: `test.fail()` aceita qualquer falha, inclusive um erro no próprio teste.
 - **Configuração** (URL, credenciais) vem de variáveis de ambiente validadas na inicialização; nunca no código.
 
 ## Espere o estado ficar pronto antes de agir
@@ -81,7 +81,8 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 
 ## Comunicação
 
-- Conversa e documentação interna em **português (Brasil)**; código, commits e README principal em inglês.
+- Conversa e documentação interna (regras, resumo de sessão) em **português (Brasil)**.
+- Em **inglês**: código, commits, issues, PRs, README principal e **entregáveis de QA para o cliente** (ex.: `docs/KNOWN_ISSUES.md`). O critério é quem lê: o que vai para o cliente segue o idioma do código.
 - Explicar o **porquê**, não só o quê; opiniões fundamentadas, não só concordância.
 
 ## Dependências e segurança
