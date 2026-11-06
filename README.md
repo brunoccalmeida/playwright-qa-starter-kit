@@ -39,6 +39,8 @@ The `api` job reads the admin credentials from the repository secrets `ADMIN_USE
 
 Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)). TypeScript majors are ignored while `typescript-eslint` rejects them as a peer dependency; [a sentinel](scripts/check-dependency-ignores.ts) in `npm run check` fails as soon as that is no longer true, so the ignore rule never outlives its reason.
 
+The `audit` job runs `npm audit` and fails on any known vulnerability, so a pull request cannot add or keep one. It reads the same advisory database as Dependabot alerts, which watch `main` between pull requests. Fix a vulnerable transitive dependency by pinning the patched version in `overrides` in `package.json`.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

@@ -72,6 +72,36 @@ jobs:
       # No test-results artifact: traces are off in CI because they would
       # store the credentials in plain text (see playwright.config.ts).
 
+  # npm audit queries the GitHub Advisory Database, the same source as the
+  # Dependabot alerts enabled on this repository. Those alerts watch main
+  # daily but block nothing; this job blocks a PR that adds or keeps a known
+  # vulnerability. No schedule here for the same reason: the alerts already
+  # cover new advisories between PRs.
+  #
+  # Policy: any known vulnerability fails the job (the default audit-level).
+  # To fix a transitive one, pin the patched version in "overrides"; never
+  # `npm audit fix --force` (it can downgrade a major) nor continue-on-error.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # No cache and no install: npm audit reads package-lock.json, so it
+      # audits exactly what `npm ci` would install, dev dependencies included
+      # (they are what this kit runs).
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Audit dependencies
+        run: npm audit
+
   # The single required check of the ruleset on main. Requiring each job by
   # name would mean editing the ruleset whenever a job is added or renamed
   # (matrix jobs are named after their values); this job's name never changes.
@@ -80,7 +110,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [check, api]
+    needs: [check, api, audit]
     if: ${{ always() }}
 
     steps:
