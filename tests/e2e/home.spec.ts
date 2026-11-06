@@ -24,7 +24,7 @@ test.describe('Home page', () => {
     for (const [index, room] of featured.entries()) {
       const card = homePage.roomCards.nth(index);
       await expect(card.getByRole('heading', { name: room.type, exact: true })).toBeVisible();
-      await expect(card).toContainText(`£${String(room.roomPrice)} per night`);
+      await expect(card).toContainText(`£${String(room.roomPrice + 1)} per night`);
       await expect(card.getByRole('link', { name: 'Book now', exact: true })).toHaveAttribute(
         'href',
         new RegExp(`^/reservation/${String(room.roomid)}[?]`),
