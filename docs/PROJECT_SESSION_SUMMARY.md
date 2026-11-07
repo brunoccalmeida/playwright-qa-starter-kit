@@ -529,9 +529,11 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
    | `Edit(.env.*)`               | ferramenta Write em `.env.probe`                                     |
 
 3. Controles, que precisam passar: `gh pr merge 99999 --auto --squash` (o `/ship-pr`), push normal, `--follow-tags` e branch `security/main-x` em dry-run, Read e `Get-Content` do `.env.example` (`Read(!.env.example)`), `printf '' >> .env.example` (`Edit(!.env.example)`), `npm run check` e os testes de login da API (leem o `.env`).
-4. As regras `*:main *` e as de `refs/heads/main` vieram do revisor: sem elas, `git push origin HEAD:main -u` passaria, porque um padrão sem `*` no fim exige que o comando termine ali (documentação: `Bash(npm run build)` não casa `npm run build --watch`). A mutação para ver o RED (tirar `*:main *` e rodar a sonda) foi **barrada pelo classificador do modo automático**, que julgou perigoso remover uma trava; o RED desse item fica sustentado pela semântica documentada, sem a sonda.
+4. As regras `*:main *` e as de `refs/heads/main` vieram do revisor: um padrão sem `*` no fim exige que o comando termine ali (documentação: `Bash(npm run build)` não casa `npm run build --watch`). Mutação: a remoção da linha pelo agente foi **barrada pelo classificador do modo automático** (remover uma trava); o usuário a removeu à mão e `git push origin HEAD:main --dry-run` **executou** (`dcba984..22fcc83  HEAD -> main`, nada enviado: `git ls-remote` confirmou a `main` em `dcba984`); com a linha de volta, negado.
 
 **Limites conhecidos** (texto não resolve; quem barra é o ruleset da `main`): `git push` sem refspec estando na `main`; `git -C . push`, `/usr/bin/git`, `bash -c '...'`; flags curtas combinadas (`-uf`); processos que leem o `.env` sem nomeá-lo (Node, `grep -r .`).
+
+**Achado:** logo após salvar o `settings.json`, a primeira sonda ainda usou a configuração antiga (passou com a regra já recolocada); a seguinte foi negada. O Claude Code recarrega o arquivo com atraso: depois de mudar uma regra, repita a sonda antes de concluir que ela não funciona.
 
 **Achado:** o `Get-Content .env` barrado no PowerShell veio com a mensagem "may only access files in the allowed working directories", que sugeria um bloqueio por diferença de maiúscula no caminho (`c:` × `C:`), e não pela regra. A sonda de controle (`.env.example` no mesmo shell passou) mostrou que a regra é que barrava. Bloqueio pelo motivo errado não prova a regra; a sonda de controle é o que separa as duas hipóteses.
 
