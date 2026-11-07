@@ -3,8 +3,11 @@ import type { TestDetails } from '@playwright/test';
 export const KNOWN_ISSUES =
   'https://github.com/brunoccalmeida/playwright-qa-starter-kit/blob/main/docs/KNOWN_ISSUES.md';
 
-/** The headings of docs/KNOWN_ISSUES.md, verbatim: the link anchors come from them. */
-const knownIssues = {
+/**
+ * The headings of docs/KNOWN_ISSUES.md, verbatim: the link anchors come from
+ * them. scripts/check-known-issues.ts (in npm run check) keeps both in sync.
+ */
+export const knownIssueTitles = {
   'KI-1': 'GET by id returns 500',
   'KI-2': 'guest messages listed without authentication',
   'KI-3': 'logout does not invalidate the token',
@@ -13,7 +16,7 @@ const knownIssues = {
   'KI-6': 'availability ignores partially overlapping bookings',
 } as const;
 
-export type KnownIssueId = keyof typeof knownIssues;
+export type KnownIssueId = keyof typeof knownIssueTitles;
 
 /** GitHub's heading anchor: lowercase, punctuation dropped, spaces to hyphens. */
 function anchor(heading: string): string {
@@ -31,7 +34,7 @@ function anchor(heading: string): string {
  * `@known-issue` tag, so the report can be filtered to these tests.
  */
 export function knownIssue(id: KnownIssueId): TestDetails {
-  const heading = `${id}: ${knownIssues[id]}`;
+  const heading = `${id}: ${knownIssueTitles[id]}`;
   return {
     tag: '@known-issue',
     annotation: [

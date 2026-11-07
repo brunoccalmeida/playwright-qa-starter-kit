@@ -480,3 +480,9 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 - O comentário com a recomendação na #24 foi barrado pela permissão de escrita externa. A recomendação: job `e2e` no container oficial, com a tag derivada do `package-lock.json` por um job anterior (`container.image: ...:v${{ needs.<job>.outputs.version }}-noble`; o contexto `needs` é permitido em `jobs.<id>.container`), acoplando imagem e `@playwright/test` por construção. Conferir antes, na documentação do GitHub, os contextos de `container` e se o `setup-node` ainda é necessário.
 
 **Próxima missão:** #24 (container no job `e2e`); depois 7 — Documentação (#8).
+
+**Revisor** (agente `reviewer`, diff completo): nada bloqueante; três achados baixos, dois aplicados.
+
+1. Descartado: "conferir se o RED está nas mensagens de commit". O revisor não tinha `git` para ler os corpos; os commits do #25 e do `knownIssue` trazem comando e erro. Procedia a observação de que o comportamento no relatório só tinha sido validado por observação, o que o achado 2 cobre em parte.
+2. Aplicado: o mapa de `tests/known-issues.ts` podia divergir dos cabeçalhos de `docs/KNOWN_ISSUES.md` em silêncio, porque o GitHub não reclama de âncora inexistente. A sentinela `scripts/check-known-issues.ts` (`npm run check:known-issues`, dentro do `check`) compara os dois lados. RED: antes do export, `does not provide an export named 'knownIssueTitles'`; mutação do cabeçalho do KI-4 para "returns HTTP 409": saída 1, com os dois lados da divergência listados; desfeita, saída 0.
+3. Aplicado: o README dizia que o `expectLoaded()` espera a página pronta; agora diz que é o `goto()`, e que o `expectLoaded()` prova a sessão.
