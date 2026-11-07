@@ -1,7 +1,7 @@
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema } from '../../src/api/room-api.ts';
 import { newRoom } from '../../src/data/factories.ts';
-import { ADMIN_SESSION, expect, KNOWN_ISSUES, test } from './fixtures.ts';
+import { ADMIN_SESSION, expect, knownIssue, test } from './fixtures.ts';
 
 test.use({ storageState: ADMIN_SESSION });
 
@@ -25,7 +25,6 @@ test.describe('Admin rooms', () => {
     const room = newRoom();
 
     await adminRoomsPage.goto();
-    await adminRoomsPage.expectLoaded();
     await adminRoomsPage.createRoom(room);
 
     const listing = adminRoomsPage.listing(room.roomName);
@@ -44,15 +43,9 @@ test.describe('Admin rooms', () => {
 
   test.fail(
     'the create-room fields are found by their labels',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-5-form-fields-without-associated-labels`,
-      },
-    },
+    knownIssue('KI-5'),
     async ({ adminRoomsPage, page }) => {
       await adminRoomsPage.goto();
-      await adminRoomsPage.expectLoaded();
 
       // Assumes the fix labels each field with its column header. A fix
       // with other texts, or of only some fields, keeps this test failing:

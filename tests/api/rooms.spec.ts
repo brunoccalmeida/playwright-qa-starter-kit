@@ -3,7 +3,7 @@ import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema, roomSchema } from '../../src/api/room-api.ts';
 import { errorListSchema, successSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, newRoom, stayAfter } from '../../src/data/factories.ts';
-import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
+import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('GET /api/room', () => {
   test('lists rooms matching the contract', async ({ roomApi, room }) => {
@@ -30,12 +30,7 @@ test.describe('GET /api/room', () => {
 
   test.fail(
     'leaves out a room booked for part of the requested dates',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-6-availability-ignores-partially-overlapping-bookings`,
-      },
-    },
+    knownIssue('KI-6'),
     async ({ roomApi, bookingApi, room }) => {
       const stay = futureStay(3);
       await expectJson(await bookingApi.create(newBooking(room.roomid, stay)), 201, bookingSchema);
@@ -79,14 +74,10 @@ test.describe('POST /api/room', () => {
 });
 
 test.describe('GET /api/room/{id}', () => {
-  test.fail(
-    'returns the room',
-    { annotation: { type: 'issue', description: `${KNOWN_ISSUES}#ki-1-get-by-id-returns-500` } },
-    async ({ roomApi, room }) => {
-      const response = await roomApi.get(room.roomid);
+  test.fail('returns the room', knownIssue('KI-1'), async ({ roomApi, room }) => {
+    const response = await roomApi.get(room.roomid);
 
-      const body = await expectJson(response, 200, roomSchema);
-      expect(body).toEqual(room);
-    },
-  );
+    const body = await expectJson(response, 200, roomSchema);
+    expect(body).toEqual(room);
+  });
 });

@@ -5,7 +5,7 @@ import { HomePage } from '../../src/pages/home-page.ts';
 import { ReservationPage } from '../../src/pages/reservation-page.ts';
 import { test as apiTest } from '../fixtures.ts';
 
-export { KNOWN_ISSUES } from '../fixtures.ts';
+export { knownIssue } from '../fixtures.ts';
 
 /**
  * The admin session saved by admin.setup.ts. Tests run as a guest by

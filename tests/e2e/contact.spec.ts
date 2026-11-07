@@ -1,7 +1,7 @@
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { messageListSchema } from '../../src/api/message-api.ts';
 import { newMessage } from '../../src/data/factories.ts';
-import { expect, KNOWN_ISSUES, test } from './fixtures.ts';
+import { expect, knownIssue, test } from './fixtures.ts';
 
 test.describe('Contact form', () => {
   test('a guest sends a message and the hotel receives it', async ({
@@ -26,12 +26,7 @@ test.describe('Contact form', () => {
 
   test.fail(
     'the message field is found by its label',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-5-form-fields-without-associated-labels`,
-      },
-    },
+    knownIssue('KI-5'),
     async ({ homePage, page }) => {
       await homePage.goto();
 

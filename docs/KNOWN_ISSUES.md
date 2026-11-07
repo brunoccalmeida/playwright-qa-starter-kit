@@ -6,6 +6,8 @@ Defects in the [Restful Booker Platform](https://automationintesting.online) fou
 
 **How they are tracked:** each issue has a test marked `test.fail()` that asserts the **correct** behavior and links here. While the defect exists, the test "fails as expected" and the run stays green; once the defect is fixed, the test starts failing and signals that the marker must be removed. The suite keeps documenting the defect and detects its fix, without hiding it behind a skipped test.
 
+**In the [test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/):** these tests count as passed and carry the `known-issue` tag; search `@known-issue` to list them. Each one names its issue, explains why it fails, and links to its entry below. The red error inside the test is the evidence of the defect, not a broken test.
+
 Issues are numbered in the order they were found.
 
 ## KI-1: GET by id returns 500

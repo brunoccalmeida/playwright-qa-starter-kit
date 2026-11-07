@@ -2,7 +2,7 @@ import { bookingListSchema, bookingSchema } from '../../src/api/booking-api.ts';
 import { expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
-import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
+import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('POST /api/booking', () => {
   test('creates a booking and echoes it back', async ({ bookingApi, room }) => {
@@ -52,12 +52,7 @@ test.describe('POST /api/booking', () => {
 
   test.fail(
     'rejects a check-out before the check-in with 400',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-4-check-out-before-check-in-returns-409`,
-      },
-    },
+    knownIssue('KI-4'),
     async ({ bookingApi, room }) => {
       const { checkin, checkout } = futureStay();
       const reversed = { checkin: checkout, checkout: checkin };
@@ -95,20 +90,16 @@ test.describe('GET /api/booking?roomid=', () => {
 });
 
 test.describe('GET /api/booking/{id}', () => {
-  test.fail(
-    'returns the booking',
-    { annotation: { type: 'issue', description: `${KNOWN_ISSUES}#ki-1-get-by-id-returns-500` } },
-    async ({ bookingApi, room, adminToken }) => {
-      const created = await expectJson(
-        await bookingApi.create(newBooking(room.roomid, futureStay())),
-        201,
-        bookingSchema,
-      );
+  test.fail('returns the booking', knownIssue('KI-1'), async ({ bookingApi, room, adminToken }) => {
+    const created = await expectJson(
+      await bookingApi.create(newBooking(room.roomid, futureStay())),
+      201,
+      bookingSchema,
+    );
 
-      const response = await bookingApi.get(created.bookingid, adminToken);
+    const response = await bookingApi.get(created.bookingid, adminToken);
 
-      const body = await expectJson(response, 200, bookingSchema);
-      expect(body).toEqual(created);
-    },
-  );
+    const body = await expectJson(response, 200, bookingSchema);
+    expect(body).toEqual(created);
+  });
 });
