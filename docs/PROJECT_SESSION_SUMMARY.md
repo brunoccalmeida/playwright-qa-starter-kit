@@ -585,7 +585,7 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 
 ## Extra — job `e2e` no container oficial do Playwright (#24)
 
-**Entregue:** o job `e2e` roda em `mcr.microsoft.com/playwright:v1.64.1-noble@sha256:…` e não tem mais o passo `playwright install --with-deps`; sentinela `scripts/check-playwright-image.ts` (`npm run check:playwright-image`, dentro do `check`); README com a política de atualização da imagem; label `blocked` na #37.
+**Entregue:** o job `e2e` roda em `mcr.microsoft.com/playwright:v1.64.1-noble@sha256:…` e não tem mais o passo `playwright install --with-deps`; `merge.config.ts` para o `report` mesclar blobs do host e do container; sentinela `scripts/check-playwright-image.ts` (`npm run check:playwright-image`, dentro do `check`); README com a política de atualização da imagem; label `blocked` na #37.
 
 **Decisões:**
 
@@ -593,7 +593,7 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 - **`setup-node` continua:** a imagem traz Node 24 (`ARG NODE_VERSION=24` no `Dockerfile.noble` da v1.64.1) e o projeto exige 26 (`.node-version`, `engines`, scripts `.ts` com _type stripping_). Fonte única do Node continua sendo o `.node-version`.
 - **`--user 1001 --ipc=host --init`:** `--user 1001` é o exemplo de playwright.dev/docs/ci (o usuário do runner, dono do workspace montado; a imagem usa root por padrão); `--ipc=host` e `--init` são recomendações de playwright.dev/docs/docker (memória compartilhada do Chromium; processos zumbis no PID 1).
 - **Tag + digest**, como as actions fixadas por SHA: tag pode ser republicada, digest não. A persona `regular` do zizmor (`unpinned-images`) aceita tag; a `pedantic` exige digest. Digest do índice multi-arquitetura, lido do cabeçalho `Docker-Content-Digest` do registro (o comando está no comentário do job). Se alguém subir a tag sem o digest, o Docker baixa a imagem antiga e o job falha alto, não em silêncio.
-- **Sentinela, não tag derivada do lockfile em tempo de execução:** derivar eliminaria a manutenção, mas exige um job a mais antes do `e2e` e impede fixar digest. A sentinela compara a tag com o `@playwright/test` instalado, exige digest e **falha fechada** quando não acha nenhuma imagem (nome de registro errado não pode virar verde). O Dependabot não atualiza a imagem: o PR dele que sobe o Playwright fica vermelho até a tag e o digest serem atualizados **no mesmo PR** (diferente da sentinela do TypeScript, aqui a correção é parte da atualização).
+- **Sentinela, não tag derivada do lockfile em tempo de execução:** derivar eliminaria a manutenção, mas exige um job a mais antes do `e2e` e impede fixar digest. A sentinela compara a tag com o `@playwright/test` do `package-lock.json` (não do `node_modules`, que pode estar velho localmente), exige digest e **falha fechada** quando não acha nenhuma imagem (nome de registro errado não pode virar verde). O Dependabot não atualiza a imagem: o PR dele que sobe o Playwright fica vermelho até a tag e o digest serem atualizados **no mesmo PR** (diferente da sentinela do TypeScript, aqui a correção é parte da atualização).
 - **Helpers duplicados** (`readFile`/`parseFile`, iguais aos de `check-dependency-ignores.ts`): segunda cópia; pela regra de três, extrair só no terceiro uso.
 
 **Fontes:** [playwright.dev/docs/ci](https://playwright.dev/docs/ci) ("Via Containers", `--user 1001`), [playwright.dev/docs/docker](https://playwright.dev/docs/docker) (formato da tag, fixar versão, "unable to locate browser executables" com versões divergentes, `--ipc=host`, `--init`, root desliga o sandbox do Chromium), [Dockerfile.noble v1.64.1](https://github.com/microsoft/playwright/blob/v1.64.1/utils/docker/Dockerfile.noble) (Node 24), [workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax) (`container`, `--network`/`--entrypoint` não suportados), [docs.zizmor.sh/audits](https://docs.zizmor.sh/audits/) (`unpinned-images`).
@@ -601,8 +601,16 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 **RED:**
 
 1. Local, sentinela antes do container: `npm run check:playwright-image` saiu com 1, `No mcr.microsoft.com/playwright image found in .github/workflows: nothing to compare.`
-2. Mutações locais (desfeitas): tag `v1.63.0` → saída 1, `image v1.63.0, installed @playwright/test 1.64.1`; digest removido → saída 1, `is not mcr.microsoft.com/playwright:v<version>-<codename>@sha256:<digest>`.
+2. Mutações locais (desfeitas), todas com saída 1: tag `v1.63.0` (`image v1.63.0, @playwright/test 1.64.1`); digest removido e referência só por digest (`is not mcr.microsoft.com/playwright:v<version>-<codename>@sha256:<digest>`); lockfile em 1.65.0 com o `node_modules` ainda em 1.64.1 (prova que a fonte é o lockfile).
+3. CI, primeiro run do PR (42379897049): `e2e` verde no container, mas o `report` reprovou: `Blob reports being merged were recorded with different test directories, and merging cannot proceed`. Correção: `merge.config.ts` só com `testDir` (exemplo de playwright.dev/docs/test-sharding). Run seguinte (42380136406) todo verde, `e2e` com 19 testes passando em 69 s.
+4. CI, sonda do caminho quebrado (run 42380308119, commit revertido em seguida; árvore final idêntica à do run verde): tag `v1.64.1` com o digest da `v1.63.0`, o único erro que a sentinela não vê. `check` verde, `e2e` vermelho em 43 s com `browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1248/...`, `ci-passed` vermelho.
 
-**Revisor:** _(a preencher)_
+**Achados:**
+
+- **O container muda o caminho do workspace** (`/__w/...` no container, `/home/runner/work/...` no host) e os blobs gravam o `testDir` absoluto. Só apareceu porque o `report` roda também em PR (decisão da Missão 6): na `main`, teria derrubado a publicação. O `merge.config.ts` não importa o `playwright.config.ts`, que valida credenciais ao carregar.
+- **A dica do Playwright engana no container:** a falha da sonda diz "Looks like Playwright was just updated… run `npx playwright install`". Com imagem, a correção é atualizar tag e digest no workflow (comando no comentário do job), nunca instalar navegadores no job.
+- **Tempo:** o `e2e` levava 67–78 s com espelho saudável e 15 min (timeout) no dia ruim; no container, 69–75 s. O ganho não é velocidade, é não depender do espelho `apt`.
+
+**Revisor** (agente `reviewer`, diff completo antes do PR): quatro achados, todos aplicados. (1) Médio: faltava o RED do container, e a afirmação "subir só a tag faz o job falhar alto" era inferência; virou a sonda 4, desenhada para o caso que a sentinela não vê. (2) Baixo: comentário do `report` ainda citava "failed browser install". (3) Baixo: a sentinela lia o `node_modules`; agora lê o lockfile. (4) Baixo: referência só por digest escapava do filtro; agora reprova no formato. `services:` e `docker://` ficam fora (o projeto não usa; YAGNI), dito no comentário.
 
 **Próxima missão:** 7 — Documentação (#8).
