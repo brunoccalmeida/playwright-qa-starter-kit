@@ -54,7 +54,9 @@ test.describe('Admin rooms', () => {
       await adminRoomsPage.goto();
       await adminRoomsPage.expectLoaded();
 
-      // The column headers above the form name each field
+      // Assumes the fix labels each field with its column header. A fix
+      // with other texts, or of only some fields, keeps this test failing:
+      // check the form whenever KI-5 is reported fixed.
       await expect(page.getByRole('textbox', { name: 'Room #', exact: true })).toBeVisible();
       await expect(page.getByRole('combobox', { name: 'Type', exact: true })).toBeVisible();
       await expect(page.getByRole('combobox', { name: 'Accessible', exact: true })).toBeVisible();

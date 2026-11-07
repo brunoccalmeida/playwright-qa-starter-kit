@@ -15,7 +15,8 @@ export async function serveRoomFromList(page: Page): Promise<void> {
     const { rooms } = roomListSchema.parse(await response.json());
     const room = rooms.find((r) => r.roomid === roomid);
     if (room === undefined) {
-      // Same answer the app would give for an unknown id: let the page show it
+      // Not in the list (e.g. the shared environment was just reset):
+      // answer 404 instead of making up a room
       await route.fulfill({ status: 404, json: { error: `Room ${String(roomid)} not found` } });
       return;
     }

@@ -10,7 +10,7 @@ Issues are numbered in the order they were found.
 
 ## KI-1: GET by id returns 500
 
-- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/api/{room,booking}/{id}` also returned 500; they were not probed again, to avoid deleting data in the shared environment.
+- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/api/{room,booking}/{id}` also returned 500; `DELETE /api/room/{id}` was confirmed again (500) on rooms created by the tests themselves; `PUT` and the booking endpoints were not probed again, to avoid changing data the tests did not create.
 - **Expected:** 200 with the resource, for an ID that was just created.
 - **Actual:** `500` with the body `Internal Server Error` (plain text, not JSON).
 - **Impact:** the `/reservation/:id` page renders blank, so guests cannot book a room. The browser tests work around it by answering `GET /api/room/{id}` with the room from `GET /api/room` ([known-issue-workarounds.ts](../src/pages/known-issue-workarounds.ts)). Data created by the tests cannot be deleted.
