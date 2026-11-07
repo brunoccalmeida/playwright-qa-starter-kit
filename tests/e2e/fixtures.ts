@@ -2,7 +2,10 @@ import { fileURLToPath } from 'node:url';
 import { AdminLoginPage } from '../../src/pages/admin-login-page.ts';
 import { AdminRoomsPage } from '../../src/pages/admin-rooms-page.ts';
 import { HomePage } from '../../src/pages/home-page.ts';
+import { ReservationPage } from '../../src/pages/reservation-page.ts';
 import { test as apiTest } from '../fixtures.ts';
+
+export { KNOWN_ISSUES } from '../fixtures.ts';
 
 /**
  * The admin session saved by admin.setup.ts. Tests run as a guest by
@@ -17,6 +20,7 @@ type PageFixtures = {
   homePage: HomePage;
   adminLoginPage: AdminLoginPage;
   adminRoomsPage: AdminRoomsPage;
+  reservationPage: ReservationPage;
 };
 
 // Extends the API fixtures: browser tests arrange their data through the
@@ -30,6 +34,9 @@ export const test = apiTest.extend<PageFixtures>({
   },
   adminRoomsPage: async ({ page }, use) => {
     await use(new AdminRoomsPage(page));
+  },
+  reservationPage: async ({ page }, use) => {
+    await use(new ReservationPage(page));
   },
 });
 

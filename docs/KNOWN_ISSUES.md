@@ -10,10 +10,10 @@ Issues are numbered in the order they were found.
 
 ## KI-1: GET by id returns 500
 
-- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/api/{room,booking}/{id}` also returned 500; they were not probed again, to avoid deleting data in the shared environment.
+- **Endpoints:** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/api/{room,booking}/{id}` also returned 500; `DELETE /api/room/{id}` was confirmed again (500) on rooms created by the tests themselves; `PUT` and the booking endpoints were not probed again, to avoid changing data the tests did not create.
 - **Expected:** 200 with the resource, for an ID that was just created.
 - **Actual:** `500` with the body `Internal Server Error` (plain text, not JSON).
-- **Impact:** the `/reservation/:id` page renders blank (the browser tests will work around it by serving the room from `GET /api/room`, see #6); data created by the tests cannot be deleted.
+- **Impact:** the `/reservation/:id` page renders blank, so guests cannot book a room. The browser tests work around it by answering `GET /api/room/{id}` with the room from `GET /api/room` ([known-issue-workarounds.ts](../src/pages/known-issue-workarounds.ts)). Data created by the tests cannot be deleted.
 - **Tests:** [rooms.spec.ts](../tests/api/rooms.spec.ts) `GET /api/room/{id} › returns the room`; [bookings.spec.ts](../tests/api/bookings.spec.ts) `GET /api/booking/{id} › returns the booking`; [messages.spec.ts](../tests/api/messages.spec.ts) `GET /api/message/{id} › returns the full message`.
 
 ## KI-2: guest messages listed without authentication
@@ -42,11 +42,11 @@ Issues are numbered in the order they were found.
 
 ## KI-5: form fields without associated labels
 
-- **Pages:** the contact form on the home page (the "Message" label is not associated with its textarea) and the create-room form in the admin area (fields without labels).
+- **Pages:** the contact form on the home page and the create-room form in the admin area (`/admin/rooms`).
 - **Expected:** every field has an accessible name, so it can be found by its label.
-- **Actual (exploratory testing, not yet covered by a test):** the textarea can only be found by its test ID `ContactDescription`.
-- **Impact:** accessibility: screen readers do not announce the field.
-- **Test:** planned in the browser (E2E) suite, in the contact and room-admin journeys (#6). This is a browser defect; the API cannot test it.
+- **Actual:** on the contact form, the "Message" label points to `id="message"`, but the textarea has `id="description"`; it can only be found by its test ID `ContactDescription`. On the create-room form, no field has a label: the column headers above it ("Room #", "Type", "Accessible", "Price") are plain paragraphs, not labels.
+- **Impact:** accessibility: screen readers do not announce what each field is for.
+- **Tests (browser):** [contact.spec.ts](../tests/e2e/contact.spec.ts), `Contact form › the message field is found by its label`; [admin-rooms.spec.ts](../tests/e2e/admin-rooms.spec.ts), `Admin rooms › the create-room fields are found by their labels`.
 
 ## KI-6: availability ignores partially overlapping bookings
 

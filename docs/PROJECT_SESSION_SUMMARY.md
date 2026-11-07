@@ -8,11 +8,11 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item           | Estado                                                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Missão atual   | 4 — E2E: fundação (#5), concluída com o merge deste PR                                                                                           |
-| Próxima missão | 5 — E2E: jornadas (#6), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                    |
+| Missão atual   | 5 — E2E: jornadas (#6), concluída com o merge deste PR                                                                                           |
+| Próxima missão | 6 — Relatório (#7), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                        |
 | PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                     |
 | Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`) e `npm audit` (`audit`); `ci-passed` no ruleset |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 4 (home, login, sessão salva) + `setup`    |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 + `setup`, 2 deles `test.fail()` (KI-5)  |
 
 ## Plano de missões
 
@@ -341,3 +341,45 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Revisor** (agente `reviewer`, diff completo): sem achado bloqueante; escopo da #5 cumprido. Dois achados, ambos aplicados. (1) Médio: a pendência da Missão 6 citava só o trace, mas o título do passo `fill` carrega a senha em qualquer relatório com passos, mesmo com o trace desligado (conferido no `playwright-core` instalado). Agora a pendência está completa aqui, no `ci.yml` e no `playwright.config.ts`. (2) Baixo: o teste da home lê a API antes de abrir a página, e um wipe do ambiente nessa janela o derrubaria sem bug no app. Ficou documentado no comentário do teste; a janela é de milissegundos e o retry do CI cobre, então o código não mudou.
 
 **Próxima missão:** 5 — E2E: jornadas (#6): contato (com o KI-5 visto falhando antes do `test.fail()`), reserva (com `page.route` contornando o KI-1) e admin de quartos, reaproveitando `ADMIN_SESSION`, os Page Objects e a preparação de dados pela API.
+
+## Missão 5 — E2E: jornadas (#6)
+
+**Entregue:** três jornadas no navegador, cada uma conferindo o resultado também pela API. **Contato:** o hóspede envia a mensagem e ela aparece em `GET /api/message`. **Reserva:** num quarto novo, com datas aleatórias no futuro, a página confirma as datas e `GET /api/booking` guarda a reserva. **Admin de quartos:** o admin cria o quarto pelo formulário, a linha aparece na lista e `GET /api/room` guarda tipo, acessibilidade, preço e recursos. O KI-5 ganhou dois testes `test.fail()` (contato e formulário de criar quarto). Novos: `ReservationPage`, `serveRoomFromList` (`src/pages/known-issue-workarounds.ts`), `HomePage.sendMessage`, `AdminRoomsPage.createRoom/listing`. `KNOWN_ISSUES.md` (KI-1 e KI-5) e README atualizados.
+
+**Sondagem da UI antes do código** (scripts descartáveis no scratchpad, como na Missão 4):
+
+| Achado                                                                                                                 | Consequência                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `<label for="message">`, mas o textarea é `id="description"`                                                           | Causa exata do KI-5 no contato; o campo é achado pelo test id `ContactDescription`                                         |
+| `/reservation/{id}` em branco (`GET /api/room/{id}` → 500); com o `page.route` a página desenha quarto e calendário    | Contorno do KI-1 confirmado antes de virar código                                                                          |
+| As datas vêm da query string (`?checkin&checkout`) e o calendário já abre com elas selecionadas                        | Sem arrastar no calendário (seria frágil e lento)                                                                          |
+| Reserva enviada → `POST /api/booking` 201 e heading "Booking Confirmed" com as datas                                   | Sinal de sucesso na UI; a API confirma que foi gravada                                                                     |
+| No formulário de criar quarto, nenhum campo tem nome acessível; só o nome tem test id; tipo, acessível e preço só `id` | KI-5 no admin; os campos são achados pelo `id` (ver Decisões)                                                              |
+| Linhas da lista de admin: `data-testid="roomlisting"`, uma célula `<p>` por coluna                                     | Escopo da linha pelo test id; asserção por célula exata                                                                    |
+| `DELETE /api/room/{id}` continua 500 nos quartos que a sonda criou                                                     | Limpeza impossível, como a fixture `room` já documentava; nomes únicos evitam colisão                                      |
+| Criar quarto com o formulário vazio → `POST /api/room` 400, **sem nenhuma mensagem na tela**                           | Achado, não KI (sem requisito escrito, mesmo critério da Missão 4); o formulário de reserva, ao contrário, mostra os erros |
+
+**Decisões:**
+
+- **Contorno do KI-1 explícito no spec** (`test.beforeEach` chamando `serveRoomFromList`), não escondido na fixture: quem lê o teste vê que a jornada depende de um contorno e por quê. Só a chamada quebrada é trocada, servida a partir de `GET /api/room` (dado real do app, não um quarto fabricado); o resto da página fala com o app de verdade. O bug continua acompanhado pelo teste de API com `test.fail()`, que o `page.route` não afeta.
+- **Campos sem label pelo `id`** (`#type`, `#accessible`, `#roomPrice`): sem nome acessível nem test id, o `id` é estável e é o atributo que um `<label for>` corrigido apontaria. A alternativa, `getByRole('combobox').nth(n)`, quebraria em silêncio se as colunas mudassem de ordem. Registrado no JSDoc do `createRoom`.
+- **UI + API em cada jornada:** a tela prova o que o usuário vê; a API prova que a ação foi gravada (o resultado, não um estado otimista da tela).
+- **Asserção por célula exata na lista de admin:** a saída de uma mutação mostrou a linha como `"QA 64952506Doubletrue150WiFi, TV"`. Com `toContainText('150')`, um sufixo aleatório como `QA 1503abcd` também passaria. Trocado por `getByText(valor, { exact: true })` dentro da linha.
+- **Validação da reserva fica na API** (hierarquia de testes): o formulário de reserva vazio mostra os erros do `POST /api/booking`, mas as regras já são cobertas lá. Nenhum teste E2E novo para isso (YAGNI).
+- **Sem commit-sonda no CI:** o job `e2e` não mudou e o RED dele foi provado na Missão 4. Os testes novos rodam no mesmo job, e o run do PR mostra as contagens.
+
+**RED:**
+
+1. Teste antes do suporte: specs e fixtures escritos antes dos Page Objects → `Cannot find module '...\src\pages\reservation-page.ts'` (e `known-issue-workarounds.ts`).
+2. KI-5 rodado primeiro como `test` comum, falhando **pelo motivo do bug**: `getByLabel('Message', { exact: true })` e `getByRole('textbox', { name: 'Room #' })` → `element(s) not found`, com a página carregada. Só então `test.fail()`.
+3. Uma mutação por asserção (script confere o trecho **exatamente uma vez** e restaura): nome na confirmação +`x` → heading não encontrado; heading "Booking Confirmed" +`x` → não encontrado (acrescentada após o revisor); assunto → `Expected: "Another subject" Received: "Question about a room"`; datas trocadas → `Expected: "2032-02-15 - 2032-02-13" Received: "2032-02-13 - 2032-02-15"`; datas gravadas → diff do `toEqual`; **sem `serveRoomFromList`** → "Reserve Now" não encontrado (página em branco: prova que o contorno é o que viabiliza a jornada); tipo `'Suite'` e preço `'151'` na linha → não encontrados; preço gravado +1 e recursos `['Views']` → diff do `toMatchObject`.
+4. Estabilidade: suíte completa (API + E2E) com `--repeat-each=3`: 109 de 109.
+
+**Achados:**
+
+- Uma mutação também revela fraqueza no próprio teste: a mensagem `Received string` mostrou que a asserção por substring tinha um falso positivo possível.
+- Relatório (Missão 6): as jornadas novas digitam só dados de teste (hóspede, mensagem, quarto); a senha de admin continua só no `setup` e no teste de login válido. O alerta da Missão 4 sobre `Fill "<valor>"` não muda de tamanho.
+
+**Revisor** (agente `reviewer`, diff completo): sem achado bloqueante; escopo da #6 cumprido. Quatro achados, todos aplicados. (1) Médio: o KI-1 (entregável do cliente) ainda dizia que `PUT`/`DELETE` não tinham sido sondados de novo, contradizendo o `DELETE` reverificado nesta missão; texto atualizado, e o comentário da fixture `room` deixou de dizer "no spike". (2) Baixo: a asserção do heading "Booking Confirmed" não tinha mutação (o mutante "sem contorno" falha antes, no `goto`); mutação feita e registrada no RED. (3) Baixo: o comentário do 404 no contorno dizia ser "a resposta que o app daria", sem evidência (o app responde 500); agora diz o que o código faz. (4) Baixo: o `test.fail()` do KI-5 no admin presume labels iguais aos cabeçalhos; uma correção com outros textos não seria anunciada. Premissa escrita no teste, com a instrução de conferir o formulário quando o KI-5 for dado como corrigido.
+
+**Próxima missão:** 6 — Relatório (#7): relatório HTML no GitHub Pages (resolvendo antes a senha nos títulos de passo `Fill`), Firefox no CI e execução noturna.
