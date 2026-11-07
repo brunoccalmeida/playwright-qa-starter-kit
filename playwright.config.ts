@@ -10,22 +10,23 @@ export default defineConfig({
   // failures in CI. Playwright still reports a test that passed on retry as
   // "flaky", so instability stays visible instead of hidden.
   retries: env.CI ? 2 : 0,
-  reporter: env.CI ? [['github'], ['list']] : 'list',
+  // In CI each job also writes a blob report; the report job merges them
+  // into the HTML report published on GitHub Pages (playwright.dev/docs/test-sharding).
+  reporter: env.CI ? [['github'], ['list'], ['blob']] : 'list',
   use: {
     baseURL: env.BASE_URL,
     // A trace stores every request body, including the login credentials,
-    // in plain text; secret masking covers CI logs, not artifacts. Traces
-    // stay local; in CI, expectJson's failure message (URL + response body)
-    // is the diagnostic. In the browser the trace would also hold the
-    // password typed into the login form and the admin session cookie.
-    // Traces off is not enough for a published report: Playwright titles
-    // the step `Fill "<value>"`, so a report that lists steps (HTML, blob,
-    // JSON) shows the password; the CI reporters (github, list) do not.
+    // in plain text, plus the admin session cookie. The report is public,
+    // so traces stay local; in CI the screenshot and expectJson's failure
+    // message (URL + response body) are the diagnostic.
     trace: env.CI ? 'off' : 'retain-on-failure',
+    // A password field renders as dots: a screenshot does not show it
+    screenshot: 'only-on-failure',
   },
   projects: [
     { name: 'api', testDir: './tests/api' },
-    // Logs in once and saves the admin session (playwright.dev/docs/auth)
+    // Logs in once and saves the admin session (playwright.dev/docs/auth).
+    // The session is a cookie, valid in any browser: one login for both.
     {
       name: 'setup',
       testDir: './tests/e2e',
@@ -33,10 +34,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'e2e',
+      name: 'chromium',
       testDir: './tests/e2e',
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      testDir: './tests/e2e',
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Firefox'] },
     },
   ],
 });
