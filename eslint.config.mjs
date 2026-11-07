@@ -17,21 +17,28 @@ export default defineConfig(
       // step races the next one and the failure surfaces somewhere else.
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
-      // Playwright titles input steps with the value (`Fill "<value>"`), so
-      // the published HTML report would show a password typed this way.
-      // Secrets go through fillSecret (src/pages/fill-secret.ts).
+      // The published HTML report is public, and Playwright puts values in
+      // step titles: see the two groups below.
       'no-restricted-syntax': [
         'error',
-        {
-          selector:
-            'CallExpression[callee.property.name=/^(fill|type|pressSequentially|insertText)$/][arguments.0.name=/password|secret|token/i]',
-          message: 'The step title would show this secret in the report: use fillSecret.',
-        },
-        {
-          selector:
-            'CallExpression[callee.property.name=/^(fill|type|pressSequentially|insertText)$/][arguments.0.property.name=/password|secret|token/i]',
-          message: 'The step title would show this secret in the report: use fillSecret.',
-        },
+        // Input steps are titled with the value (`Fill "<value>"`). The value
+        // is the 1st argument on a locator, the 2nd on page/frame
+        // (`page.fill(selector, value)`). Secrets go through fillSecret.
+        ...[0, 1].flatMap((i) =>
+          ['name', 'property.name'].map((key) => ({
+            selector: `CallExpression[callee.property.name=/^(fill|type|pressSequentially|insertText)$/][arguments.${String(i)}.${key}=/password|secret|token/i]`,
+            message: 'The step title would show this secret in the report: use fillSecret.',
+          })),
+        ),
+        // An expect message becomes the step title even when the assertion
+        // passes, so a message built from data (a response body, a token)
+        // is published. Constant messages are fine; options objects
+        // (expect.poll, expect(x, { message })) are not checked.
+        ...['callee.name', 'callee.object.name'].map((callee) => ({
+          selector: `CallExpression[${callee}='expect'][arguments.1][arguments.1.type!='Literal'][arguments.1.type!='ObjectExpression']`,
+          message:
+            'This message is the step title even on success: use a constant, or expectJson/expectStatus (body only on failure).',
+        })),
       ],
     },
   },
