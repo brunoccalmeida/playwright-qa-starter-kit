@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Nightly run against the live app: the shared environment changes without
+  # a commit here (resets, other testers, app releases). 06:23 UTC (03:23 in
+  # Brasília), off the top of the hour, when GitHub delays scheduled runs the
+  # most. GitHub disables schedules after 60 days without repository activity.
+  schedule:
+    - cron: '23 6 * * *'
 
 # Least privilege: jobs that need more ask for it explicitly
 permissions:
@@ -69,8 +75,21 @@ jobs:
           BASE_URL: https://automationintesting.online
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-      # No test-results artifact: traces are off in CI because they would
-      # store the credentials in plain text (see playwright.config.ts).
+          # One blob per job, named after it: the default name is not
+          # guaranteed to differ between jobs, and the report job downloads
+          # all blobs into one folder
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-api.zip
+
+      # Even when tests fail: a failing run is the report most worth reading.
+      # Holds what the published report shows (no traces, see
+      # playwright.config.ts); kept one day, only until the report job runs.
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: blob-report-api
+          path: blob-report
+          retention-days: 1
 
   e2e:
     runs-on: ubuntu-latest
@@ -92,29 +111,111 @@ jobs:
         run: npm ci
 
       # No browser cache: playwright.dev/docs/ci says restoring it takes about
-      # as long as downloading the binaries. Only the browser the tests use.
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # as long as downloading the binaries. Only the browsers the tests use.
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox
 
-      # The e2e project depends on setup, which logs in and saves the admin
-      # session; same secrets and the same reason as the api job.
+      # The browser projects depend on setup, which logs in and saves the
+      # admin session; same secrets and the same reason as the api job.
       - name: Run E2E tests
         run: npm run test:e2e
         env:
           BASE_URL: https://automationintesting.online
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-      # No artifact, as in the api job: a trace would hold the typed password
-      # and the session cookie, and any report that lists steps (HTML, blob,
-      # JSON) shows the password too: Playwright titles the step
-      # `Fill "<value>"`, even with traces off. The published report comes
-      # with Mission 6, which must solve this first.
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-e2e.zip
+
+      # Same as in the api job. The password never reaches a step title
+      # (fillSecret); a test that fails mid-login can still print it, in the
+      # call log or page snapshot (docs/PROJECT_SESSION_SUMMARY.md, Mission 6).
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: blob-report-e2e
+          path: blob-report
+          retention-days: 1
+
+  # Merges the blobs of the test jobs into one HTML report
+  # (playwright.dev/docs/test-sharding). Runs on PRs too, so a broken report
+  # blocks the merge instead of surfacing on main; its github-pages artifact
+  # is the exact site the deploy job would publish.
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [api, e2e]
+    # A failed test run still produces the report worth publishing
+    if: ${{ !cancelled() }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      # No --config: merge-reports then loads an empty config, so this job
+      # needs no credentials (playwright.config.ts validates them on import).
+      # merge-reports exits 1 when a merged test failed; the test jobs
+      # already gate on that. This step fails only if no report was written.
+      - name: Merge into the HTML report
+        run: |
+          npx playwright merge-reports --reporter html ./all-blob-reports || echo "merge-reports exited $? (a merged test failed, or the merge did)"
+          test -s playwright-report/index.html
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_HTML_TITLE: Restful Booker Platform - test report
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: playwright-report
+
+  # Publishes the report of main (each merge and the nightly run) on GitHub
+  # Pages; never from a PR. Not in ci-passed: it runs after the merge, so it
+  # cannot gate one. Its failure still shows on the run of main.
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: report
+    if: ${{ !cancelled() && needs.report.result == 'success' && github.event_name != 'pull_request' }}
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # One deployment at a time; a newer run waits instead of cancelling one
+    # half-way (a merge and the nightly run can overlap)
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
   # npm audit queries the GitHub Advisory Database, the same source as the
   # Dependabot alerts enabled on this repository. Those alerts watch main
   # daily but block nothing; this job blocks a PR that adds or keeps a known
-  # vulnerability. No schedule here for the same reason: the alerts already
-  # cover new advisories between PRs.
+  # vulnerability. It also runs in the nightly run (the whole workflow does),
+  # which only repeats what the alerts already report between PRs.
   #
   # Policy: any known vulnerability fails the job (the default audit-level).
   # To fix a transitive one, pin the patched version in "overrides"; never
@@ -148,7 +249,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [check, api, e2e, audit]
+    needs: [check, api, e2e, audit, report]
     if: ${{ always() }}
 
     steps:
@@ -158,12 +259,13 @@ jobs:
           persist-credentials: false
 
       # A job missing from "needs" would not gate the merge. Compare the
-      # jobs this gate waited for with every other job of this workflow.
+      # jobs this gate waited for with every other job of this workflow,
+      # except deploy: it never runs on a PR, so it cannot gate a merge.
       - name: Require the gate to need every job
         env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
-          expected=$(yq -o=json '.jobs | keys | map(select(. != "ci-passed")) | sort' .github/workflows/ci.yml | jq -c .)
+          expected=$(yq -o=json '.jobs | keys | map(select(. != "ci-passed" and . != "deploy")) | sort' .github/workflows/ci.yml | jq -c .)
           actual=$(jq -c 'keys | sort' <<< "$NEEDS")
           echo "workflow jobs: $expected"
           echo "gate needs:    $actual"
