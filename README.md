@@ -13,7 +13,7 @@ Requires Node.js (version in [.node-version](.node-version)).
 ```sh
 npm ci            # install the exact locked dependencies
 cp .env.example .env
-npm run check     # type-check, lint, format check and dependency-ignore sentinel
+npm run check     # type-check, lint, format check and the sentinels in scripts/
 npm run test:api  # API tests (no browser needed)
 npx playwright install chromium firefox
 npm run test:e2e  # browser tests (Chromium and Firefox)
@@ -48,6 +48,8 @@ Every pull request runs the [CI workflow](.github/workflows/ci.yml). `main` is p
 The `api` and `e2e` jobs read the admin credentials from the repository secrets `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Set them both as **Actions** and as **Dependabot** secrets: workflows triggered by Dependabot can only read Dependabot secrets.
 
 Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)). TypeScript majors are ignored while `typescript-eslint` rejects them as a peer dependency; [a sentinel](scripts/check-dependency-ignores.ts) in `npm run check` fails as soon as that is no longer true, so the ignore rule never outlives its reason.
+
+The `e2e` job runs in the official Playwright container image, which ships the browsers and their system libraries, so no run depends on an `apt` mirror. The image tag must match `@playwright/test`, and Dependabot does not bump it: [another sentinel](scripts/check-playwright-image.ts) fails `npm run check` in the Dependabot pull request that bumps Playwright, until the tag and digest in the workflow are updated in that same pull request (the `e2e` job's comment shows how to get the digest).
 
 The `audit` job runs `npm audit` and fails on any known vulnerability, so a pull request cannot add or keep one. It reads the same advisory database as Dependabot alerts, which watch `main` between pull requests. Fix a vulnerable transitive dependency by pinning the patched version in `overrides` in `package.json`.
 

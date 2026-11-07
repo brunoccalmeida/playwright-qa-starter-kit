@@ -6,15 +6,15 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item             | Estado                                                                                                                                                                                                                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual     | Extra — gitleaks e zizmor no CI (#31), concluída com o merge deste PR                                                                                                                                                                                                                                               |
-| Próxima missão   | #24 (job `e2e` no container oficial do Playwright); depois 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                                                                                              |
-| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                        |
-| Portões          | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
-| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                      |
-| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                         |
-| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                     |
+| Item             | Estado                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual     | Extra — job `e2e` no container oficial do Playwright (#24), concluída com o merge deste PR                                                                                                                                                                                                                                                                       |
+| Próxima missão   | 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios). A #37 (Betterleaks) ganhou a label `blocked`: espera o v2 estável                                                                                                                                                                   |
+| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                                                                     |
+| Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues e da imagem do Playwright), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
+| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                   |
+| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                                                                      |
+| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
 
 ## Plano de missões
 
@@ -582,3 +582,27 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 **Irmã:** brunoccalmeida/uat-automation-framework#147. Esta missão é a fonte; após o merge, comentar lá com o link do PR.
 
 **Próxima missão:** #24 (container oficial do Playwright no job `e2e`); depois 7 — Documentação (#8).
+
+## Extra — job `e2e` no container oficial do Playwright (#24)
+
+**Entregue:** o job `e2e` roda em `mcr.microsoft.com/playwright:v1.64.1-noble@sha256:…` e não tem mais o passo `playwright install --with-deps`; sentinela `scripts/check-playwright-image.ts` (`npm run check:playwright-image`, dentro do `check`); README com a política de atualização da imagem; label `blocked` na #37.
+
+**Decisões:**
+
+- **Container, não `timeout-minutes` no passo nem retry** (opções 2 e 3 da issue): os dois só mudam _como_ o job falha quando o espelho `apt` fica lento; o container tira o `apt` do caminho. A imagem traz navegadores e bibliotecas do sistema; o pull vem do MCR, não do espelho do Ubuntu.
+- **`setup-node` continua:** a imagem traz Node 24 (`ARG NODE_VERSION=24` no `Dockerfile.noble` da v1.64.1) e o projeto exige 26 (`.node-version`, `engines`, scripts `.ts` com _type stripping_). Fonte única do Node continua sendo o `.node-version`.
+- **`--user 1001 --ipc=host --init`:** `--user 1001` é o exemplo de playwright.dev/docs/ci (o usuário do runner, dono do workspace montado; a imagem usa root por padrão); `--ipc=host` e `--init` são recomendações de playwright.dev/docs/docker (memória compartilhada do Chromium; processos zumbis no PID 1).
+- **Tag + digest**, como as actions fixadas por SHA: tag pode ser republicada, digest não. A persona `regular` do zizmor (`unpinned-images`) aceita tag; a `pedantic` exige digest. Digest do índice multi-arquitetura, lido do cabeçalho `Docker-Content-Digest` do registro (o comando está no comentário do job). Se alguém subir a tag sem o digest, o Docker baixa a imagem antiga e o job falha alto, não em silêncio.
+- **Sentinela, não tag derivada do lockfile em tempo de execução:** derivar eliminaria a manutenção, mas exige um job a mais antes do `e2e` e impede fixar digest. A sentinela compara a tag com o `@playwright/test` instalado, exige digest e **falha fechada** quando não acha nenhuma imagem (nome de registro errado não pode virar verde). O Dependabot não atualiza a imagem: o PR dele que sobe o Playwright fica vermelho até a tag e o digest serem atualizados **no mesmo PR** (diferente da sentinela do TypeScript, aqui a correção é parte da atualização).
+- **Helpers duplicados** (`readFile`/`parseFile`, iguais aos de `check-dependency-ignores.ts`): segunda cópia; pela regra de três, extrair só no terceiro uso.
+
+**Fontes:** [playwright.dev/docs/ci](https://playwright.dev/docs/ci) ("Via Containers", `--user 1001`), [playwright.dev/docs/docker](https://playwright.dev/docs/docker) (formato da tag, fixar versão, "unable to locate browser executables" com versões divergentes, `--ipc=host`, `--init`, root desliga o sandbox do Chromium), [Dockerfile.noble v1.64.1](https://github.com/microsoft/playwright/blob/v1.64.1/utils/docker/Dockerfile.noble) (Node 24), [workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax) (`container`, `--network`/`--entrypoint` não suportados), [docs.zizmor.sh/audits](https://docs.zizmor.sh/audits/) (`unpinned-images`).
+
+**RED:**
+
+1. Local, sentinela antes do container: `npm run check:playwright-image` saiu com 1, `No mcr.microsoft.com/playwright image found in .github/workflows: nothing to compare.`
+2. Mutações locais (desfeitas): tag `v1.63.0` → saída 1, `image v1.63.0, installed @playwright/test 1.64.1`; digest removido → saída 1, `is not mcr.microsoft.com/playwright:v<version>-<codename>@sha256:<digest>`.
+
+**Revisor:** _(a preencher)_
+
+**Próxima missão:** 7 — Documentação (#8).
