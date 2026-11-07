@@ -35,6 +35,7 @@ Configuration comes from environment variables ([.env.example](.env.example)), v
 - **Page objects** ([src/pages/](src/pages/)) expose user-facing locators and actions; tests make the assertions. A page's `expectLoaded()` waits for proof that the page is ready, not for an intermediate state such as a URL that changes before the content renders.
 - **Admin session:** the `setup` project logs in through the UI once per run and saves the session to `playwright/.auth/admin.json` (ignored by Git: it grants access to the admin account). E2E tests run as a guest; an admin spec opts in with `test.use({ storageState: ADMIN_SESSION })` ([tests/e2e/fixtures.ts](tests/e2e/fixtures.ts)).
 - **Known application bugs** are tests marked `test.fail()` that link to [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md): they assert the correct behaviour, and start "failing" when the bug is fixed.
+- **Workarounds for blocking bugs:** when an app bug blocks a whole journey, the browser test replaces only the broken call with `page.route` and keeps the rest real ([src/pages/known-issue-workarounds.ts](src/pages/known-issue-workarounds.ts)); the bug itself stays tracked by its `test.fail()` test. Example: the reservation page is blank because `GET /api/room/{id}` returns 500 (KI-1), so the booking journey serves that room from `GET /api/room`.
 
 ## Continuous integration
 
