@@ -25,7 +25,6 @@ test.describe('Admin rooms', () => {
     const room = newRoom();
 
     await adminRoomsPage.goto();
-    await adminRoomsPage.expectLoaded();
     await adminRoomsPage.createRoom(room);
 
     const listing = adminRoomsPage.listing(room.roomName);
@@ -52,7 +51,6 @@ test.describe('Admin rooms', () => {
     },
     async ({ adminRoomsPage, page }) => {
       await adminRoomsPage.goto();
-      await adminRoomsPage.expectLoaded();
 
       // Assumes the fix labels each field with its column header. A fix
       // with other texts, or of only some fields, keeps this test failing:

@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { NewRoom } from '../api/room-api.ts';
+import { roomListSchema, type NewRoom } from '../api/room-api.ts';
 
 /** Room management at /admin/rooms (requires an admin session). */
 export class AdminRoomsPage {
@@ -11,18 +11,48 @@ export class AdminRoomsPage {
    * only for an authenticated user.
    */
   private readonly adminNavigation: Locator;
+  /** The room rows have no table semantics: the test id is the only container. */
+  private readonly roomListings: Locator;
 
   constructor(private readonly page: Page) {
     this.adminNavigation = page
       .getByRole('navigation')
       .getByRole('link', { name: 'Report', exact: true });
+    this.roomListings = page.getByTestId('roomlisting');
   }
 
+  /**
+   * Opens the page and returns only once it is ready to use: the session
+   * proved and the room list rendered. The list renders above the
+   * create-room form and pushes it down (about 760 px with 11 rooms), so
+   * a click aimed at the form before the list arrives can land on a room
+   * row instead (#25: "Clicking the checkbox did not change its state").
+   *
+   * Ready means the rows on screen match the rooms in the page's own
+   * response: the list may be empty in the shared environment, and a
+   * second request to the API could see rooms another tester just added.
+   */
   async goto(): Promise<void> {
+    // Registered before the navigation, or a fast response is missed
+    const roomList = this.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/room',
+    );
+    // If expectLoaded fails first, the page closes and roomList rejects
+    // with nobody awaiting it yet. Marking it handled avoids an unhandled
+    // rejection; awaiting it below still throws its own error.
+    roomList.catch(() => undefined);
     await this.page.goto('/admin/rooms');
+    // Without a session the list never comes: fail on the clearer check
+    await this.expectLoaded();
+    const { rooms } = roomListSchema.parse(await (await roomList).json());
+    await expect(this.roomListings).toHaveCount(rooms.length);
   }
 
-  /** Waits for the authenticated room list, not an intermediate state. */
+  /**
+   * Waits for proof of an admin session, e.g. after a UI login. It does not
+   * wait for the room list: to use the page, open it with goto().
+   */
   async expectLoaded(): Promise<void> {
     await expect(this.adminNavigation).toBeVisible();
     await expect(this.page).toHaveURL(/\/admin\/rooms$/);
@@ -33,12 +63,9 @@ export class AdminRoomsPage {
     return this.page.getByText(roomName, { exact: true });
   }
 
-  /**
-   * A room's whole row, to check its other columns. The rows have no table
-   * semantics, so the test id is the only container.
-   */
+  /** A room's whole row, to check its other columns. */
   listing(roomName: string): Locator {
-    return this.page.getByTestId('roomlisting').filter({ has: this.room(roomName) });
+    return this.roomListings.filter({ has: this.room(roomName) });
   }
 
   /**
