@@ -1,7 +1,7 @@
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema } from '../../src/api/room-api.ts';
 import { newRoom } from '../../src/data/factories.ts';
-import { ADMIN_SESSION, expect, KNOWN_ISSUES, test } from './fixtures.ts';
+import { ADMIN_SESSION, expect, knownIssue, test } from './fixtures.ts';
 
 test.use({ storageState: ADMIN_SESSION });
 
@@ -43,12 +43,7 @@ test.describe('Admin rooms', () => {
 
   test.fail(
     'the create-room fields are found by their labels',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-5-form-fields-without-associated-labels`,
-      },
-    },
+    knownIssue('KI-5'),
     async ({ adminRoomsPage, page }) => {
       await adminRoomsPage.goto();
 

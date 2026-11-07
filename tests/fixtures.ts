@@ -8,8 +8,7 @@ import { successSchema } from '../src/api/schemas.ts';
 import { adminCredentials } from '../src/config/env.ts';
 import { newRoom } from '../src/data/factories.ts';
 
-export const KNOWN_ISSUES =
-  'https://github.com/brunoccalmeida/playwright-qa-starter-kit/blob/main/docs/KNOWN_ISSUES.md';
+export { knownIssue } from './known-issues.ts';
 
 type ApiFixtures = {
   authApi: AuthApi;

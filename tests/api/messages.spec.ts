@@ -6,7 +6,7 @@ import {
 } from '../../src/api/message-api.ts';
 import { successSchema } from '../../src/api/schemas.ts';
 import { newMessage } from '../../src/data/factories.ts';
-import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
+import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('POST /api/message', () => {
   test('accepts a valid message', async ({ messageApi }) => {
@@ -46,41 +46,28 @@ test.describe('GET /api/message', () => {
     );
   });
 
-  test.fail(
-    'requires authentication',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-2-guest-messages-listed-without-authentication`,
-      },
-    },
-    async ({ messageApi }) => {
-      const response = await messageApi.list();
+  test.fail('requires authentication', knownIssue('KI-2'), async ({ messageApi }) => {
+    const response = await messageApi.list();
 
-      // The fixed response is unknown: assert only the status (not even JSON)
-      await expectStatus(response, 401);
-    },
-  );
+    // The fixed response is unknown: assert only the status (not even JSON)
+    await expectStatus(response, 401);
+  });
 });
 
 test.describe('GET /api/message/{id}', () => {
-  test.fail(
-    'returns the full message',
-    { annotation: { type: 'issue', description: `${KNOWN_ISSUES}#ki-1-get-by-id-returns-500` } },
-    async ({ messageApi, adminToken }) => {
-      const message = newMessage();
-      await expectJson(await messageApi.create(message), 200, successSchema);
-      const { messages } = await expectJson(
-        await messageApi.list(adminToken),
-        200,
-        messageListSchema,
-      );
-      const created = expectFound(messages, (m) => m.name === message.name, message.name);
+  test.fail('returns the full message', knownIssue('KI-1'), async ({ messageApi, adminToken }) => {
+    const message = newMessage();
+    await expectJson(await messageApi.create(message), 200, successSchema);
+    const { messages } = await expectJson(
+      await messageApi.list(adminToken),
+      200,
+      messageListSchema,
+    );
+    const created = expectFound(messages, (m) => m.name === message.name, message.name);
 
-      const response = await messageApi.get(created.id, adminToken);
+    const response = await messageApi.get(created.id, adminToken);
 
-      const body = await expectJson(response, 200, messageSchema);
-      expect(body).toMatchObject(message);
-    },
-  );
+    const body = await expectJson(response, 200, messageSchema);
+    expect(body).toMatchObject(message);
+  });
 });

@@ -6,7 +6,7 @@ import {
 import { expectJson } from '../../src/api/expect-json.ts';
 import { errorSchema } from '../../src/api/schemas.ts';
 import { adminCredentials } from '../../src/config/env.ts';
-import { expect, KNOWN_ISSUES, test } from '../fixtures.ts';
+import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('POST /api/auth/login', () => {
   test('returns a token for valid credentials', async ({ authApi }) => {
@@ -57,20 +57,11 @@ test.describe('POST /api/auth/logout', () => {
     expect(body.success).toBe(true);
   });
 
-  test.fail(
-    'invalidates the token',
-    {
-      annotation: {
-        type: 'issue',
-        description: `${KNOWN_ISSUES}#ki-3-logout-does-not-invalidate-the-token`,
-      },
-    },
-    async ({ authApi, adminToken }) => {
-      await expectJson(await authApi.logout(adminToken), 200, logoutResponseSchema);
+  test.fail('invalidates the token', knownIssue('KI-3'), async ({ authApi, adminToken }) => {
+    await expectJson(await authApi.logout(adminToken), 200, logoutResponseSchema);
 
-      const response = await authApi.validate(adminToken);
+    const response = await authApi.validate(adminToken);
 
-      await expectJson(response, 403, errorSchema);
-    },
-  );
+    await expectJson(response, 403, errorSchema);
+  });
 });

@@ -49,7 +49,7 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 
 - **Isolamento:** cada teste cria os próprios dados, únicos (datas aleatórias no futuro, nomes com sufixo), e não depende de ordem nem de dados de outro teste. O ambiente é compartilhado: nunca presuma estado prévio nem apague o que não criou.
 - **Localizadores voltados ao usuário:** `getByRole`, `getByLabel`, `getByText`; `getByTestId` só quando não há alternativa acessível (registre o porquê). Nada de CSS/XPath frágil. `getByRole` casa por substring sem diferenciar maiúsculas: use `exact: true` quando houver ambiguidade.
-- **Bug conhecido do app:** `test.fail()` com o link da entrada em `docs/KNOWN_ISSUES.md`, nunca `skip`. Quando o bug for corrigido, o teste passa a "falhar" e avisa. Antes de marcar, troque temporariamente por `test` e confirme que falha **pelo motivo do bug**: `test.fail()` aceita qualquer falha, inclusive um erro no próprio teste.
+- **Bug conhecido do app:** `test.fail(título, knownIssue('KI-n'), corpo)`, nunca `skip`; KI novo entra em `docs/KNOWN_ISSUES.md` e no mapa de `tests/known-issues.ts` (título idêntico ao cabeçalho, que gera o link). Quando o bug for corrigido, o teste passa a "falhar" e avisa. Antes de marcar, troque temporariamente por `test` e confirme que falha **pelo motivo do bug**: `test.fail()` aceita qualquer falha, inclusive um erro no próprio teste.
 - **Configuração** (URL, credenciais) vem de variáveis de ambiente validadas na inicialização; nunca no código.
 
 ## Espere o estado ficar pronto antes de agir
