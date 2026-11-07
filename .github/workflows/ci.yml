@@ -196,13 +196,14 @@ jobs:
             test -f "all-blob-reports/$blob" || { echo "::error::Missing $blob: its test job wrote no report"; exit 1; }
           done
 
-      # No --config: merge-reports then loads an empty config, so this job
-      # needs no credentials (playwright.config.ts validates them on import).
-      # merge-reports exits 1 when a merged test failed; the test jobs
+      # merge.config.ts, not playwright.config.ts: it only sets testDir (the
+      # api and e2e blobs come from different workspace paths, host and
+      # container), so this job needs no credentials (playwright.config.ts
+      # validates them on import). merge-reports exits 1 when a merged test failed; the test jobs
       # already gate on that. This step fails only if no report was written.
       - name: Merge into the HTML report
         run: |
-          npx playwright merge-reports --reporter html ./all-blob-reports || echo "merge-reports exited $? (a merged test failed, or the merge did)"
+          npx playwright merge-reports --config merge.config.ts --reporter html ./all-blob-reports || echo "merge-reports exited $? (a merged test failed, or the merge did)"
           test -s playwright-report/index.html
         env:
           PLAYWRIGHT_HTML_OPEN: never
