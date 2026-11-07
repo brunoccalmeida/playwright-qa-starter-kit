@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { Credentials } from '../api/auth-api.ts';
+import { fillSecret } from './fill-secret.ts';
 
 /** The admin login form at /admin. */
 export class AdminLoginPage {
@@ -28,7 +29,7 @@ export class AdminLoginPage {
 
   async login({ username, password }: Credentials): Promise<void> {
     await this.username.fill(username);
-    await this.password.fill(password);
+    await fillSecret(this.password, password);
     await this.submit.click();
   }
 }

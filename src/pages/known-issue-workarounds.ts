@@ -11,7 +11,13 @@ import { roomListSchema } from '../api/room-api.ts';
 export async function serveRoomFromList(page: Page): Promise<void> {
   await page.route(/\/api\/room\/\d+$/, async (route) => {
     const roomid = Number(new URL(route.request().url()).pathname.split('/').pop());
-    const response = await route.fetch({ url: new URL('/api/room', route.request().url()).href });
+    const response = await route.fetch({
+      url: new URL('/api/room', route.request().url()).href,
+      // route.fetch reuses the browser's headers. Firefox accepts zstd, which
+      // Playwright's fetch does not decompress (microsoft/playwright#37032):
+      // json() would parse the compressed bytes. Ask for what it decodes.
+      headers: { ...route.request().headers(), 'accept-encoding': 'gzip, deflate, br' },
+    });
     const { rooms } = roomListSchema.parse(await response.json());
     const room = rooms.find((r) => r.roomid === roomid);
     if (room === undefined) {
