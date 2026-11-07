@@ -287,9 +287,13 @@ jobs:
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
 
-      # Exits 1 on any leak
+      # --log-opts=HEAD: without it gitleaks runs `git log --all`, and with
+      # fetch-depth 0 a secret on any other branch would fail every PR and
+      # the nightly run. This check judges what main would contain; GitHub
+      # secret scanning (enabled on this repository) watches every branch
+      # for known provider tokens. Exits 1 on any leak.
       - name: Scan the git history for secrets
-        run: '"$RUNNER_TEMP/gitleaks" git --redact --verbose .'
+        run: '"$RUNNER_TEMP/gitleaks" git --log-opts=HEAD --redact --verbose .'
 
   # Security audit of the workflows with zizmor (docs.zizmor.sh): template
   # injection, excessive permissions, persisted credentials and, since
