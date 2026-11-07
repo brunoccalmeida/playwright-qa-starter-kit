@@ -535,6 +535,8 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 
 **Achado:** o `Get-Content .env` barrado no PowerShell veio com a mensagem "may only access files in the allowed working directories", que sugeria um bloqueio por diferença de maiúscula no caminho (`c:` × `C:`), e não pela regra. A sonda de controle (`.env.example` no mesmo shell passou) mostrou que a regra é que barrava. Bloqueio pelo motivo errado não prova a regra; a sonda de controle é o que separa as duas hipóteses.
 
+**Revisor** (agente `reviewer`, diff completo): cinco achados, todos procedentes. (1) `*:main` só casava com o refspec no fim: entraram as variantes com ` *` e `refs/heads/main` solto; (2) as sondas eram por amostragem: refeitas uma por regra (tabela acima); (3) e (4) lacunas que o texto não resolve: viraram "Limites conhecidos", e a frase da regra deixou de sugerir cobertura total; (5) o RED foi para o corpo do commit.
+
 **Irmã:** brunoccalmeida/uat-automation-framework#146. Esta missão é a fonte; após o merge, comentar lá com o link do PR.
 
 **Próxima missão:** #31 (gitleaks e zizmor, a outra P1 de segurança).
