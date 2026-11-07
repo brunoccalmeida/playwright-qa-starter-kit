@@ -6,14 +6,15 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                                                                                                                                                                          |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | 6 — Relatório (#7, reaberta após o PR #23 por defeitos do relatório publicado), concluída com o merge deste PR                                                                                                                                                  |
-| Próxima missão | #24 (job `e2e` no container oficial do Playwright, decidido nesta missão); depois 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                   |
-| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                    |
-| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main`                                                  |
-| Relatório      | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                     |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue` |
+| Item             | Estado                                                                                                                                                                                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual     | Extra — travas do agente de IA (#30), concluída com o merge deste PR                                                                                                                                                                                            |
+| Próxima missão   | #31 (gitleaks e zizmor no CI, a outra P1 de segurança); depois #24 (job `e2e` no container oficial do Playwright) e 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                 |
+| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                    |
+| Portões          | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main`                                                  |
+| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                  |
+| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                     |
+| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue` |
 
 ## Plano de missões
 
@@ -486,3 +487,54 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 1. Descartado: "conferir se o RED está nas mensagens de commit". O revisor não tinha `git` para ler os corpos; os commits do #25 e do `knownIssue` trazem comando e erro. Procedia a observação de que o comportamento no relatório só tinha sido validado por observação, o que o achado 2 cobre em parte.
 2. Aplicado: o mapa de `tests/known-issues.ts` podia divergir dos cabeçalhos de `docs/KNOWN_ISSUES.md` em silêncio, porque o GitHub não reclama de âncora inexistente. A sentinela `scripts/check-known-issues.ts` (`npm run check:known-issues`, dentro do `check`) compara os dois lados. RED: antes do export, `does not provide an export named 'knownIssueTitles'`; mutação do cabeçalho do KI-4 para "returns HTTP 409": saída 1, com os dois lados da divergência listados; desfeita, saída 0.
 3. Aplicado: o README dizia que o `expectLoaded()` espera a página pronta; agora diz que é o `goto()`, e que o `expectLoaded()` prova a sessão.
+
+## Extra — travas do agente de IA (#30)
+
+**Entregue:** `.claude/settings.json` (configuração de projeto, versionada) com `permissions.deny` para `gh pr merge --admin`, force push (`--force*`, `-f`, refspec `+`), push na `main` (`main`, `:main`, `:refs/heads/main`) e leitura/escrita de `.env` e `.env.*` (exceto `.env.example`). Item novo em "Dependências e segurança" das regras.
+
+**Decisões:**
+
+- **`permissions.deny` em vez de hook `PreToolUse`:** é o mecanismo declarativo documentado, sem código para manter e testar. A documentação avisa que uma regra de Bash "isn't a security boundary around the program": `git -C . push --force` ou `bash -c '...'` escapam. Isso é aceitável aqui porque a fronteira real já existe no servidor: o ruleset `Protect main` (sem bypass) recusa force push, push direto e merge sem `ci-passed`, inclusive com `--admin`. As travas locais são defesa em profundidade, para o agente errar cedo e com uma mensagem clara.
+- **Regras em dobro (`Bash(...)` e `PowerShell(...)`):** no Windows o agente tem as duas ferramentas, e regras de Bash não valem para o PowerShell.
+- **`.env` por regras `Read`/`Edit`, sem sandbox:** a sandbox (fronteira no nível do sistema operacional) não roda no Windows nativo, só no WSL2. As regras `Read`/`Edit` cobrem as ferramentas de arquivo, comandos reconhecidos (`cat`, `Get-Content`) e redirecionamentos (`>>`). Não cobrem processos que abrem o arquivo por conta própria, e é isso que mantém o `loadEnvFile` dos testes funcionando.
+- **Nomes sem caminho (`Read(.env)`):** seguem o gitignore e valem em qualquer profundidade; `Read(!.env.example)` libera o modelo, que não tem segredo.
+- **Merge comum continua permitido:** o `/ship-pr` usa `gh pr merge --auto`; negar `gh pr merge` inteiro quebraria o fluxo.
+- **README sem mudança:** ele ainda não descreve a configuração do agente; isso entra na Missão 7 (#8).
+
+**Fontes:** [Configure permissions](https://code.claude.com/docs/en/permissions) (sintaxe de wildcard; "What a Bash rule doesn't match"; regras `Read`/`Edit` em `cat`, `head`, redirecionamentos; seção PowerShell; precedência deny > hook) e [Sandboxing](https://code.claude.com/docs/en/sandboxing) ("On native Windows, Claude Code runs commands unsandboxed").
+
+**RED** (sondas inofensivas: `--dry-run`, PR inexistente 99999, só a contagem de bytes do `.env`, arquivo descartável `.env.probe`):
+
+1. Sem o arquivo, todas executaram: `cat .env | wc -c` → 312; `gh pr merge 99999 --admin` → `Could not resolve to a PullRequest` (o comando rodou); `git push --dry-run --force ...` → `[new branch]`; `git push --dry-run origin HEAD:main` → `Everything up-to-date`; `Get-Content .env` no PowerShell → 303; Grep no `.env` → 3 ocorrências.
+2. Com o arquivo, **uma sonda por regra**, cada uma montada para casar com um só padrão, todas negadas ("Permission to use Bash/PowerShell with command ... has been denied"), nos dois shells:
+
+   | Regra                        | Sonda                                                                |
+   | ---------------------------- | -------------------------------------------------------------------- |
+   | `gh pr merge *--admin*`      | `gh pr merge 99999 --admin`                                          |
+   | `git push *--force*`         | `git push --dry-run --force origin HEAD:refs/heads/x`                |
+   | `git push -f*`               | `git push -f --dry-run origin HEAD:refs/heads/x`                     |
+   | `git push * -f*`             | `git push --dry-run -f origin HEAD:refs/heads/x`                     |
+   | `git push * +*`              | `git push --dry-run origin +HEAD:refs/heads/x`                       |
+   | `git push * main`            | `git push --dry-run origin main`                                     |
+   | `git push * main *`          | `git push origin main --dry-run`                                     |
+   | `git push *:main`            | `git push --dry-run origin HEAD:main`                                |
+   | `git push *:main *`          | `git push origin HEAD:main --dry-run`                                |
+   | `git push * refs/heads/main` | `git push --dry-run origin refs/heads/main`                          |
+   | `... refs/heads/main *`      | `git push origin refs/heads/main --dry-run`                          |
+   | `git push *:refs/heads/main` | `git push --dry-run origin HEAD:refs/heads/main`                     |
+   | `... :refs/heads/main *`     | `git push origin HEAD:refs/heads/main --dry-run`                     |
+   | `Read(.env)`                 | ferramentas Read e Grep, `cat`, `Get-Content`, `gc`, `Select-String` |
+   | `Read(.env.*)`               | ferramenta Read em `.env.local`                                      |
+   | `Edit(.env)`                 | ferramenta Edit, `printf '' >> .env`                                 |
+   | `Edit(.env.*)`               | ferramenta Write em `.env.probe`                                     |
+
+3. Controles, que precisam passar: `gh pr merge 99999 --auto --squash` (o `/ship-pr`), push normal, `--follow-tags` e branch `security/main-x` em dry-run, Read e `Get-Content` do `.env.example` (`Read(!.env.example)`), `printf '' >> .env.example` (`Edit(!.env.example)`), `npm run check` e os testes de login da API (leem o `.env`).
+4. As regras `*:main *` e as de `refs/heads/main` vieram do revisor: sem elas, `git push origin HEAD:main -u` passaria, porque um padrão sem `*` no fim exige que o comando termine ali (documentação: `Bash(npm run build)` não casa `npm run build --watch`). A mutação para ver o RED (tirar `*:main *` e rodar a sonda) foi **barrada pelo classificador do modo automático**, que julgou perigoso remover uma trava; o RED desse item fica sustentado pela semântica documentada, sem a sonda.
+
+**Limites conhecidos** (texto não resolve; quem barra é o ruleset da `main`): `git push` sem refspec estando na `main`; `git -C . push`, `/usr/bin/git`, `bash -c '...'`; flags curtas combinadas (`-uf`); processos que leem o `.env` sem nomeá-lo (Node, `grep -r .`).
+
+**Achado:** o `Get-Content .env` barrado no PowerShell veio com a mensagem "may only access files in the allowed working directories", que sugeria um bloqueio por diferença de maiúscula no caminho (`c:` × `C:`), e não pela regra. A sonda de controle (`.env.example` no mesmo shell passou) mostrou que a regra é que barrava. Bloqueio pelo motivo errado não prova a regra; a sonda de controle é o que separa as duas hipóteses.
+
+**Irmã:** brunoccalmeida/uat-automation-framework#146. Esta missão é a fonte; após o merge, comentar lá com o link do PR.
+
+**Próxima missão:** #31 (gitleaks e zizmor, a outra P1 de segurança).
