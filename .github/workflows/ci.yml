@@ -15,8 +15,10 @@ on:
 permissions:
   contents: read
 
-# A new push to a PR supersedes the run of the previous commit. Runs on main
-# are never cancelled: each merge keeps its own result.
+# A new push to a PR supersedes the run of the previous commit. On main a
+# running run is never cancelled, so merges and the nightly run take turns;
+# GitHub keeps at most one pending run per group, so a pending run is
+# replaced by a newer one (which tests a newer main).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -169,6 +171,16 @@ jobs:
           path: all-blob-reports
           merge-multiple: true
 
+      # A test job that died before writing its blob (timeout, failed browser
+      # install) would leave a report of the other layer only, published as
+      # if complete. Fail instead: Pages keeps the previous report, which
+      # shows its own date, and this run shows why.
+      - name: Require a blob from every test job
+        run: |
+          for blob in report-api.zip report-e2e.zip; do
+            test -f "all-blob-reports/$blob" || { echo "::error::Missing $blob: its test job wrote no report"; exit 1; }
+          done
+
       # No --config: merge-reports then loads an empty config, so this job
       # needs no credentials (playwright.config.ts validates them on import).
       # merge-reports exits 1 when a merged test failed; the test jobs
@@ -200,8 +212,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    # One deployment at a time; a newer run waits instead of cancelling one
-    # half-way (a merge and the nightly run can overlap)
+    # The workflow group already serializes runs on main; this group also
+    # covers any other workflow that deploys to Pages, and never cancels a
+    # deployment half-way
     concurrency:
       group: pages
       cancel-in-progress: false
