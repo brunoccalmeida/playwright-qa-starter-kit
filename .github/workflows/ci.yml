@@ -254,6 +254,72 @@ jobs:
       - name: Audit dependencies
         run: npm audit
 
+  # Secret scanning with gitleaks over the history of the tested commit (on a
+  # PR, the merge commit: what main would become). A key pushed to a public
+  # repository is leaked even if a later commit deletes it, so every commit
+  # is scanned, not only the last diff. No gitleaks-action: its licence
+  # requires a paid key for organizations, which is where this kit is used.
+  # The release is pinned by version and SHA-256 (from the release's
+  # checksums file); Dependabot does not track it, so bump both by hand.
+  #
+  # Triage a false positive with a `gitleaks:allow` comment on the line or
+  # its fingerprint in .gitleaksignore; a real secret is rotated first, then
+  # removed. --redact keeps a found secret out of this public run's log.
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # fetch-depth 0: the default shallow clone holds one commit, so a
+      # secret added and deleted within a PR would go unseen
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/gitleaks.tar.gz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+
+      # Exits 1 on any leak
+      - name: Scan the git history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --verbose .'
+
+  # Security audit of the workflows with zizmor (docs.zizmor.sh): template
+  # injection, excessive permissions, persisted credentials and, since
+  # zizmor 1.20, any action not pinned by full commit SHA. The regular
+  # persona (the default, meant for CI) has no findings here; pedantic only
+  # asks for job names, and auditor flags the demo credentials outside a
+  # GitHub environment (docs/PROJECT_SESSION_SUMMARY.md, issue #31).
+  # Ignore a finding only inline, with a reason: `# zizmor: ignore[rule]`.
+  workflow-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # advanced-security: false prints the findings and fails the job;
+      # true would upload SARIF to code scanning and always pass, which
+      # ci-passed could not see. version is pinned (default: latest) so a
+      # new zizmor release cannot fail a PR that changed nothing; Dependabot
+      # bumps the action, not this input, so bump it by hand.
+      - name: Audit the workflows
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          advanced-security: false
+          annotations: true
+          version: 1.32.0
+
   # The single required check of the ruleset on main. Requiring each job by
   # name would mean editing the ruleset whenever a job is added or renamed
   # (matrix jobs are named after their values); this job's name never changes.
@@ -262,7 +328,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [check, api, e2e, audit, report]
+    needs: [check, api, e2e, audit, report, secret-scan, workflow-audit]
     if: ${{ always() }}
 
     steps:
