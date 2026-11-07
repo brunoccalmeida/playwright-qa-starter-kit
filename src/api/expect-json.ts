@@ -1,4 +1,4 @@
-import { expect, type APIResponse } from '@playwright/test';
+import type { APIResponse } from '@playwright/test';
 import { z } from 'zod';
 
 /**
@@ -13,13 +13,14 @@ export async function expectJson<Schema extends z.ZodType>(
   status: number,
   schema: Schema,
 ): Promise<z.infer<Schema>> {
+  await expectStatus(response, status);
   const text = await response.text();
   const context = `${response.url()}\nBody: ${text}`;
 
-  expect(response.status(), `HTTP status of ${context}`).toBe(status);
-  expect(response.headers()['content-type'], `Content-Type of ${context}`).toContain(
-    'application/json',
-  );
+  const contentType = response.headers()['content-type'] ?? '(none)';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Expected a JSON Content-Type, received "${contentType}": ${context}`);
+  }
 
   let json: unknown;
   try {
@@ -42,10 +43,18 @@ export async function expectJson<Schema extends z.ZodType>(
  * For a test.fail() whose fixed response is unknown: expectJson would also
  * demand a JSON body, so a fix returning, say, an empty 401 would still fail
  * the test and the fix would never be reported.
+ *
+ * Plain errors, not `expect(value, message)`: Playwright turns that message
+ * into the step title of a PASSING assertion too, so every response body
+ * (login tokens included) would land in the published HTML report. Here the
+ * body is only read into the message when the check fails.
  */
 export async function expectStatus(response: APIResponse, status: number): Promise<void> {
-  const text = await response.text();
-  expect(response.status(), `HTTP status of ${response.url()}\nBody: ${text}`).toBe(status);
+  if (response.status() !== status) {
+    throw new Error(
+      `Expected HTTP ${String(status)}, received ${String(response.status())}: ${response.url()}\nBody: ${await response.text()}`,
+    );
+  }
 }
 
 /**

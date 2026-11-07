@@ -17,6 +17,22 @@ export default defineConfig(
       // step races the next one and the failure surfaces somewhere else.
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
+      // Playwright titles input steps with the value (`Fill "<value>"`), so
+      // the published HTML report would show a password typed this way.
+      // Secrets go through fillSecret (src/pages/fill-secret.ts).
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(fill|type|pressSequentially|insertText)$/][arguments.0.name=/password|secret|token/i]',
+          message: 'The step title would show this secret in the report: use fillSecret.',
+        },
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(fill|type|pressSequentially|insertText)$/][arguments.0.property.name=/password|secret|token/i]',
+          message: 'The step title would show this secret in the report: use fillSecret.',
+        },
+      ],
     },
   },
   {
