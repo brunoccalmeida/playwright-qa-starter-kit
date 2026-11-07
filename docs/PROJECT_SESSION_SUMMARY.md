@@ -6,28 +6,28 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                                                                                                                         |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual   | 6 — Relatório (#7), concluída com o merge deste PR                                                                                                                                                             |
-| Próxima missão | 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                                                    |
-| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                   |
-| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
-| Relatório      | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                    |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5)                             |
+| Item           | Estado                                                                                                                                                                                                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual   | 6 — Relatório (#7, reaberta após o PR #23 por defeitos do relatório publicado), concluída com o merge deste PR                                                                                                                                                  |
+| Próxima missão | #24 (job `e2e` no container oficial do Playwright, decidido nesta missão); depois 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                   |
+| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                    |
+| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main`                                                  |
+| Relatório      | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                     |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue` |
 
 ## Plano de missões
 
-| #   | Missão                       | Escopo                                                                                                               |
-| --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 0   | Fundação                     | Repo, issues, tooling (TS estrito, ESLint, Prettier), regras do projeto, este resumo                                 |
-| 1   | CI de qualidade              | Workflow com `npm run check` e job agregador `ci-passed`; ruleset na `main`; skill `ship-pr`                         |
-| 2   | API: autenticação            | `@playwright/test`, `playwright.config.ts`, env validado (zod), cliente de API, helper `expectJson`, testes de login |
-| 3   | API: rooms/bookings/messages | Testes de contrato e regra de negócio; `docs/KNOWN_ISSUES.md` com os bugs do app                                     |
-| —   | Extra (#17)                  | `docs/KNOWN_ISSUES.md` em inglês (entregável do cliente) e regra de idioma ajustada; `npm audit` no CI               |
-| 4   | E2E: fundação                | Page Objects, projeto `setup` + `storageState`, home e login                                                         |
-| 5   | E2E: jornadas                | Contato, reserva (com `page.route` contornando o bug #1), admin de quartos                                           |
-| 6   | Relatório                    | Relatório HTML no GitHub Pages, Firefox no CI, execução noturna                                                      |
-| 7   | Documentação                 | `docs/ADAPTING.md` (como reaproveitar o kit num cliente), README EN e pt-BR                                          |
+| #   | Missão                       | Escopo                                                                                                                        |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Fundação                     | Repo, issues, tooling (TS estrito, ESLint, Prettier), regras do projeto, este resumo                                          |
+| 1   | CI de qualidade              | Workflow com `npm run check` e job agregador `ci-passed`; ruleset na `main`; skill `ship-pr`                                  |
+| 2   | API: autenticação            | `@playwright/test`, `playwright.config.ts`, env validado (zod), cliente de API, helper `expectJson`, testes de login          |
+| 3   | API: rooms/bookings/messages | Testes de contrato e regra de negócio; `docs/KNOWN_ISSUES.md` com os bugs do app                                              |
+| —   | Extra (#17)                  | `docs/KNOWN_ISSUES.md` em inglês (entregável do cliente) e regra de idioma ajustada; `npm audit` no CI                        |
+| 4   | E2E: fundação                | Page Objects, projeto `setup` + `storageState`, home e login                                                                  |
+| 5   | E2E: jornadas                | Contato, reserva (com `page.route` contornando o bug #1), admin de quartos                                                    |
+| 6   | Relatório                    | Relatório HTML no GitHub Pages, Firefox no CI, execução noturna; reaberta: flaky do Firefox (#25) e falhas esperadas legíveis |
+| 7   | Documentação                 | `docs/ADAPTING.md` (como reaproveitar o kit num cliente), README EN e pt-BR                                                   |
 
 Princípio: cada dependência entra na missão que a usa (YAGNI). Por isso `@playwright/test`, `zod` e `playwright.config.ts` ficam para a Missão 2.
 
@@ -433,3 +433,50 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Idioma do assistente (#22):** no meio deste chat, as mensagens ao usuário passaram para o inglês depois de longas sequências de ferramentas com conteúdo em inglês. A regra existia só como texto carregado no início da sessão (sem `settings.json` nem hooks); a #22 avalia um hook que a imponha.
 
 **Próxima missão:** 7 — Documentação (#8): `docs/ADAPTING.md` (incluir o cuidado com relatório de cliente: conta de teste dedicada, senha aleatória, relatório privado até a #21), README em inglês e pt-BR, badges e "At a Glance", sem o aviso de "Work in progress".
+
+## Missão 6, continuação (#7 reaberta, #25)
+
+O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria missão, e a #7 foi reaberta. A "Próxima missão" da seção anterior ficou para depois desta continuação.
+
+**Achados do pós-merge do PR #23:**
+
+- A primeira execução na `main` estourou o `timeout-minutes: 15` do job `e2e` dentro do `playwright install --with-deps`: o espelho apt (`azure.archive.ubuntu.com`) servia dezenas de KB/s (#24).
+- Sem `report-e2e.zip`, o `report` recusou publicar um relatório parcial, como previsto pelo achado (1) do revisor da Missão 6: a guarda funcionou em produção.
+- O primeiro deploy só veio com o rerun dos jobs falhos; nele o Firefox teve um _flaky_ em `admin-rooms.spec.ts` (#25).
+
+**Entregue:**
+
+1. **#25, flaky no Firefox:** `AdminRoomsPage.goto()` só retorna com a lista de quartos renderizada. Ele registra `waitForResponse` do `GET /api/room` antes da navegação e espera que o número de linhas na tela seja igual ao de quartos na resposta da própria página.
+2. **Falhas esperadas legíveis:** `knownIssue('KI-n')` (`tests/known-issues.ts`) gera, a partir de um único mapa dos títulos de `docs/KNOWN_ISSUES.md`, uma anotação "Known issue" com a frase que explica a falha, o link para a entrada e a tag `@known-issue`. `KNOWN_ISSUES.md`, o README e a regra do projeto foram atualizados.
+
+**Causa raiz do #25 (diagnóstico por hipóteses, cada uma testada com sonda):**
+
+- Refutado: a chegada da lista reseta o estado do formulário. Com `GET /api/room` atrasado, o TV continuou marcado.
+- Refutado: alguma resposta remonta o checkbox. Atrasando `auth/validate`, `message/count` ou `room`, o elemento original continuou no DOM (`isConnected`).
+- Confirmado: **layout shift**. As linhas de quartos ficam acima do formulário e o empurram para baixo (o TV vai de y = 132 para y = 892 com 11 quartos). Nas coordenadas antigas fica a coluna de features de outro quarto. O `expectLoaded()` (só o link "Report") liberava o teste antes de o `GET /api/room` sequer sair. Se a lista chega entre o cálculo da posição e o clique, o clique cai numa linha de quarto, e a mensagem é `Clicking the checkbox did not change its state`.
+- Por que só no CI: a falha depende de a resposta chegar nessa janela. No Windows e no container local, 20 + 60 repetições não a reproduziram, e por isso foi preciso **forçar** a condição em vez de repetir até "pegar".
+
+**Decisões:**
+
+- **"Pronto" = linhas na tela iguais aos quartos na resposta da própria página**, não "pelo menos uma linha" (a lista pode estar vazia no ambiente compartilhado) e não uma segunda chamada à API (outro tester pode criar um quarto no meio). Mesmo padrão do `HomePage.goto()`: `goto()` devolve a página utilizável. O `expectLoaded()` ficou só como prova de sessão (usado após o login de UI no `setup`).
+- `roomList.catch(() => undefined)`: se o `expectLoaded()` falhar primeiro, a página fecha e a promessa do `waitForResponse` rejeitaria sem ninguém aguardando (rejeição não tratada). Aguardá-la depois ainda lança o próprio erro.
+- **Âncora derivada do título** (regra de slug do GitHub) em vez de strings repetidas em 9 testes: uma fonte só para o nome mostrado e o link. As 6 âncoras derivadas são idênticas às antigas.
+- **#24 em missão própria** (escolha do usuário): PR focado. Recomendação registrada abaixo.
+
+**Fontes:** [playwright.dev/docs/api/class-test#test-fail](https://playwright.dev/docs/api/class-test#test-fail) (formas do `test.fail`; a com título não aceita `description`, por isso o relatório mostrava um `fail` solto); [playwright.dev/docs/test-annotations](https://playwright.dev/docs/test-annotations) (o HTML mostra anotações, menos as de `type` iniciado por `_`); [playwright.dev/docs/ci](https://playwright.dev/docs/ci) "Via Containers" e [playwright.dev/docs/docker](https://playwright.dev/docs/docker) (para a #24). Como o relatório exibe uma falha esperada não está documentado: foi visto num relatório local com screenshot.
+
+**RED:**
+
+1. #25: sonda temporária com `GET /api/room` atrasado 3 s (`route.continue` após a espera), lendo a contagem de linhas uma vez logo após `goto()` + `expectLoaded()`: `Expected: 11, Received: 0` no Chromium e no Firefox. Com a correção, 3 de 3.
+2. `knownIssue`: `auth.spec.ts` passou a usá-lo antes de ele existir; `tsc`: `TS2724: '"../fixtures.ts"' has no exported member named 'knownIssue'`.
+
+**Validação:** container `mcr.microsoft.com/playwright:v1.64.1-noble` (`--ipc=host --cpus=2`, `CI=true`), E2E completo em Chromium + Firefox, `--repeat-each=5 --retries=0 --workers=2`: 91 de 91. `--grep @known-issue` em api, chromium e firefox: 12 de 12 (setup + as 11 falhas esperadas). No relatório local, a busca `@known-issue` lista exatamente as 7 da API.
+
+**Achados:**
+
+- **Reproduzir no Linux sem CI:** a imagem oficial (já com o Node 26.13.0 do `.node-version`) roda a suíte com o código copiado por `git ls-files | tar` e `npm ci` dentro do container. Serve para qualquer falha "só no CI".
+- Na primeira execução no container, o `setup` falhou uma vez com a página ainda em "Loading..." após 5 s (a API respondia em ~0,4 s) e não se repetiu nas 3 execuções seguintes. Fica só registrado; se reaparecer no CI, vira issue.
+- Nas sondas, `route.fetch()` + `route.fulfill()` com atraso deixou o Firefox sem renderizar a lista de quartos. Com `route.continue()` após a espera, os dois navegadores funcionaram. Para atrasar uma resposta numa sonda, prefira `continue`.
+- O comentário com a recomendação na #24 foi barrado pela permissão de escrita externa. A recomendação: job `e2e` no container oficial, com a tag derivada do `package-lock.json` por um job anterior (`container.image: ...:v${{ needs.<job>.outputs.version }}-noble`; o contexto `needs` é permitido em `jobs.<id>.container`), acoplando imagem e `@playwright/test` por construção. Conferir antes, na documentação do GitHub, os contextos de `container` e se o `setup-node` ainda é necessário.
+
+**Próxima missão:** #24 (container no job `e2e`); depois 7 — Documentação (#8).
