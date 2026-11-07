@@ -1,5 +1,5 @@
 // Sentinel: the Playwright container image of the workflows must match the
-// installed @playwright/test, and be pinned by digest.
+// @playwright/test locked in package-lock.json, and be pinned by digest.
 //
 // The image ships the browsers of one Playwright release; with any other
 // version, "Playwright will be unable to locate browser executables"
@@ -38,19 +38,23 @@ const workflowSchema = z.object({
     }),
   ),
 });
-const playwrightSchema = z.object({ version: z.string() });
+// The lockfile, not node_modules: it is what `npm ci` installs in CI, and a
+// stale local node_modules (a pull without `npm ci`) would judge wrongly.
+const lockfileSchema = z.object({
+  packages: z.object({
+    'node_modules/@playwright/test': z.object({ version: z.string() }),
+  }),
+});
 
 const workflowsDir = '.github/workflows';
-const playwrightPath = 'node_modules/@playwright/test/package.json';
+const lockfilePath = 'package-lock.json';
 const repository = 'mcr.microsoft.com/playwright';
 // v<version>-<ubuntu codename>@sha256:<digest>, e.g. v1.64.1-noble@sha256:...
 const reference = /^v(?<version>\d+\.\d+\.\d+)-[a-z]+@sha256:[0-9a-f]{64}$/;
 
-const installed = parseFile(
-  playwrightPath,
-  playwrightSchema,
-  JSON.parse(readFile(playwrightPath)),
-).version;
+const locked = parseFile(lockfilePath, lockfileSchema, JSON.parse(readFile(lockfilePath))).packages[
+  'node_modules/@playwright/test'
+].version;
 
 const images = readdirSync(new URL(`../${workflowsDir}`, import.meta.url))
   .filter((name) => /\.ya?ml$/.test(name))
@@ -59,25 +63,29 @@ const images = readdirSync(new URL(`../${workflowsDir}`, import.meta.url))
     const workflow = parseFile(path, workflowSchema, parse(readFile(path)));
     return Object.entries(workflow.jobs).flatMap(([job, { container }]) => {
       const image = typeof container === 'string' ? container : container?.image;
-      return image?.startsWith(`${repository}:`) === true
-        ? [{ where: `${path} (${job})`, image }]
-        : [];
+      // ':' (tag) or '@' (digest only): either way it is this repository,
+      // and a reference without the tag fails the format check below
+      const ofRepository = [':', '@'].some((separator) =>
+        image?.startsWith(`${repository}${separator}`),
+      );
+      return image !== undefined && ofRepository ? [{ where: `${path} (${job})`, image }] : [];
     });
   });
 
 const problems = images.flatMap(({ where, image }) => {
-  const match = reference.exec(image.slice(repository.length + 1));
+  const match = reference.exec(image.slice(`${repository}:`.length));
   if (match?.groups === undefined) {
     return [`${where}: "${image}" is not ${repository}:v<version>-<codename>@sha256:<digest>`];
   }
   const { version } = match.groups;
-  return version === installed
+  return version === locked
     ? []
-    : [`${where}: image v${String(version)}, installed @playwright/test ${installed}`];
+    : [`${where}: image v${String(version)}, @playwright/test ${locked} in ${lockfilePath}`];
 });
 
-// Fail closed: a renamed registry or a typo in the image must not leave
-// this check with nothing to compare and a green exit.
+// Fail closed: a renamed registry or a typo in the only image must not leave
+// this check with nothing to compare and a green exit. Scope: `container:`
+// of jobs; the workflows use no `services:` nor `docker://` steps (YAGNI).
 if (images.length === 0) {
   problems.push(`No ${repository} image found in ${workflowsDir}: nothing to compare.`);
 }
@@ -89,6 +97,6 @@ if (problems.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Playwright image matches @playwright/test ${installed} in ${String(images.length)} job(s).`,
+    `Playwright image matches @playwright/test ${locked} (${lockfilePath}) in ${String(images.length)} job(s).`,
   );
 }

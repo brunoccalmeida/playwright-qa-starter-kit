@@ -186,8 +186,8 @@ jobs:
           path: all-blob-reports
           merge-multiple: true
 
-      # A test job that died before writing its blob (timeout, failed browser
-      # install) would leave a report of the other layer only, published as
+      # A test job that died before writing its blob (timeout, failed image
+      # pull) would leave a report of the other layer only, published as
       # if complete. Fail instead: Pages keeps the previous report, which
       # shows its own date, and this run shows why.
       - name: Require a blob from every test job
