@@ -6,15 +6,15 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item             | Estado                                                                                                                                                                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual     | Extra — travas do agente de IA (#30), concluída com o merge deste PR                                                                                                                                                                                            |
-| Próxima missão   | #31 (gitleaks e zizmor no CI, a outra P1 de segurança); depois #24 (job `e2e` no container oficial do Playwright) e 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                 |
-| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                    |
-| Portões          | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main`                                                  |
-| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                  |
-| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                     |
-| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue` |
+| Item             | Estado                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual     | Extra — gitleaks e zizmor no CI (#31), concluída com o merge deste PR                                                                                                                                                                                                                                               |
+| Próxima missão   | #24 (job `e2e` no container oficial do Playwright); depois 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                                                                                              |
+| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                        |
+| Portões          | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
+| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                      |
+| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                         |
+| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                     |
 
 ## Plano de missões
 
@@ -542,3 +542,43 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 **Irmã:** brunoccalmeida/uat-automation-framework#146. Esta missão é a fonte; após o merge, comentar lá com o link do PR.
 
 **Próxima missão:** #31 (gitleaks e zizmor, a outra P1 de segurança).
+
+## Extra — gitleaks e zizmor no CI (#31)
+
+**Entregue:** dois jobs novos no `ci.yml`, ambos nos `needs` do `ci-passed`: `secret-scan` (gitleaks 8.30.1 no histórico inteiro do commit testado) e `workflow-audit` (zizmor 1.32.0 via `zizmor-action` 0.8.1). README com a política de triagem; issue #37 (Betterleaks v2).
+
+**Decisões:**
+
+- **gitleaks, não Betterleaks (por ora):** o README do gitleaks o declara _feature complete_ (só correções de segurança) e os mantenedores migraram para o Betterleaks (MIT). Mas o Betterleaks v1 está em manutenção e o v2 é _release candidate_ com guia de migração (CLI, config, relatório): adotar agora seria migrar duas vezes. A #37 reavalia com o v2 estável.
+- **Binário oficial, sem `gitleaks-action`:** a licença da action é proprietária e exige chave paga para organizações, que é onde o kit vai ser usado. O job baixa a release e confere o SHA-256 fixado no workflow (do `checksums.txt` da release); verificação contra o arquivo baixado da mesma origem não protegeria nada, o hash no repositório sim.
+- **Histórico do commit testado (`fetch-depth: 0`, `--log-opts=HEAD`):** num PR, a head é o merge commit, então a varredura vê exatamente o que a `main` passaria a conter, incluindo commits que adicionaram e apagaram um segredo. Sem `--log-opts`, o gitleaks roda `git log --all` (visto no log de depuração), e com `fetch-depth: 0` um segredo em qualquer outra branch reprovaria todos os PRs e a execução noturna (achado do revisor). As outras branches ficam com o secret scanning nativo do GitHub (ligado neste repositório, com push protection), que vigia todas as refs para tokens de provedores conhecidos; o gitleaks soma os padrões genéricos, que o GitHub não cobre aqui (`non_provider_patterns` desligado). O clone raso padrão (1 commit) não veria o segredo apagado. `--redact`: o log do run é público.
+- **`advanced-security: false` no zizmor:** com `true`, os achados vão em SARIF para o code scanning e o job sempre passa (documentação: em modo SARIF "zizmor will always exit with code 0"), invisível para o `ci-passed`. Com `false`, achado reprova o job (saída 11–14) e `annotations: true` marca a linha no PR.
+- **Persona `regular`** (a padrão, feita para CI). As outras, rodadas localmente: `pedantic` só pede `name:` em 7 definições e um comentário na permissão do `deploy`; `auditor` aponta `secrets-outside-env` nas 4 referências às credenciais de teste. São credenciais públicas do app de demonstração: um GitHub Environment só para elas é cerimônia sem ganho. Para cliente com credencial real, vale reavaliar.
+- **SHA obrigatório sem arquivo de config:** desde o zizmor 1.20, a política padrão do `unpinned-uses` exige SHA para todas as actions, inclusive `actions/*`; com a versão fixada, o padrão não muda sem um commit. Um `zizmor.yml` repetindo o padrão seria redundante (YAGNI).
+- **Versões fixadas à mão:** `version: 1.32.0` (o padrão do input é `latest`, que deixaria uma release nova do zizmor reprovar um PR que não mudou nada) e a release do gitleaks. O Dependabot atualiza a action do zizmor, não esses valores; atualizar à mão (registrado no README e nos comentários do workflow).
+- **Triagem:** o histórico completo de todas as branches (`--log-opts=--all`, 25 commits, mais do que o CI passa a varrer) não tem vazamento, então não há `.gitleaksignore`. Falso positivo futuro: `gitleaks:allow` na linha ou fingerprint no `.gitleaksignore`; segredo real: revogar primeiro, depois remover. Achado do zizmor só se ignora na linha, com motivo.
+
+**Fontes:** [docs.zizmor.sh/usage](https://docs.zizmor.sh/usage/) (códigos de saída, `# zizmor: ignore[...]`), [docs.zizmor.sh/audits](https://docs.zizmor.sh/audits/) (`unpinned-uses`, política padrão desde a 1.20), [docs.zizmor.sh/integrations](https://docs.zizmor.sh/integrations/), [zizmor-action](https://github.com/zizmorcore/zizmor-action) (inputs), [gitleaks](https://github.com/gitleaks/gitleaks) (`gitleaks git`, `--redact`, códigos de saída, ignorar achados, aviso de _feature complete_), [gitleaks-action](https://github.com/gitleaks/gitleaks-action) (licença para organizações), [Betterleaks](https://github.com/betterleaks/betterleaks) (v1 × v2).
+
+**RED:**
+
+1. Local, gitleaks num repositório descartável com uma `apiKey` de alta entropia commitada e apagada no commit seguinte: `leaks found: 1`, saída 1.
+2. Local, zizmor numa cópia do `ci.yml` com `actions/checkout@v7`: `error[unpinned-uses] ... action is not pinned to a hash (required by blanket policy)`, 1 high, saída 14. Sem a mutação, `No findings to report`.
+3. CI, PR descartável (#36, fechado sem merge, branch apagada), uma sonda por vez:
+   - Run 42377703515, `actions/checkout@v7`: `workflow-audit: failure` (`ci.yml:33: unpinned action reference`, saída 14), `ci-passed: failure`, PR `BLOCKED`; os demais jobs, `secret-scan` inclusive, verdes.
+   - Run 42377881287, segredo falso commitado e apagado no commit seguinte (árvore da head idêntica à da branch da missão): `secret-scan: failure` (`RuleID: generic-api-key`, `File: src/probe-leak.ts`, no commit que já tinha sido apagado; `Secret: REDACTED`; 22 commits), `ci-passed: failure`; `workflow-audit` verde.
+4. Escopo (depois do revisor), repositório descartável com uma branch `pr` (segredo adicionado e apagado), uma `other` (outro segredo) e a `main` limpa: com `--log-opts=HEAD` na `main`, `no leaks found`, saída 0; com o padrão (`--all`), `leaks found: 2`, saída 1 (o defeito); no merge commit de `pr` na `main` (árvore só com `a.txt`), `--log-opts=HEAD` dá `leaks found: 1`, saída 1. Os runs de CI acima são do escopo antigo; o segredo da sonda estava no histórico da própria head, então a conclusão deles vale para os dois escopos.
+5. A sentinela de `needs` do `ci-passed` passou com os dois jobs novos incluídos (sem eles, ela já reprova, provado na Missão 1).
+
+**Achados:**
+
+- **Por que a sonda do gitleaks não podia ser commit + revert no PR da missão:** o revert apaga o segredo da árvore, mas não do histórico; o job varre o histórico, então a branch ficaria vermelha até reescrevê-la (force push, barrado pelas travas do agente). É a demonstração do próprio portão: segredo commitado continua vazado depois de apagado. Daí o PR descartável.
+- Os commits da sonda continuam acessíveis em `refs/pull/36/head` (o GitHub guarda refs de PR fechado). O segredo é falso; com um real, só a revogação resolveria, como no achado do token da Missão 6.
+- `git revert -q` não existe; o `&&` parou a sequência, mas um `;` seguinte deixou o push sair com as duas sondas ativas. Corrigido com um revert antes do run terminar (o novo push cancelou o anterior). Mesma lição da Missão 1: conferir `git diff <branch> --stat` antes de ler o resultado de uma sonda.
+- O workflow já passava limpo no zizmor (persona `regular`): as convenções da Missão 1 (SHA, `persist-credentials: false`, permissões mínimas) estavam certas; agora são impostas.
+
+**Revisor** (agente `reviewer`, diff completo): dois achados, ambos aplicados. (1) Médio: o comentário do workflow, o README e este resumo diziam que a varredura cobria só o histórico do commit testado, mas o padrão do `gitleaks git` é `--all`; confirmado no log de depuração (`git log -p -U0 --full-history --all`, 20 commits contra 14 da `HEAD`) e corrigido com `--log-opts=HEAD` (RED 4). O RED original provou que o portão reprova, não o escopo. (2) Baixo: a triagem local usou um escopo maior que o do CI sem dizer; agora explícito.
+
+**Irmã:** brunoccalmeida/uat-automation-framework#147. Esta missão é a fonte; após o merge, comentar lá com o link do PR.
+
+**Próxima missão:** #24 (container oficial do Playwright no job `e2e`); depois 7 — Documentação (#8).

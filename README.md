@@ -51,6 +51,13 @@ Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.gi
 
 The `audit` job runs `npm audit` and fails on any known vulnerability, so a pull request cannot add or keep one. It reads the same advisory database as Dependabot alerts, which watch `main` between pull requests. Fix a vulnerable transitive dependency by pinning the patched version in `overrides` in `package.json`.
 
+Two jobs guard the repository itself:
+
+- `secret-scan` runs [gitleaks](https://github.com/gitleaks/gitleaks) over the whole history of the tested commit (on a pull request, what `main` would contain), so a secret committed and deleted later in the same pull request still fails it. Other branches are left to GitHub secret scanning, which watches every branch for known provider tokens; enable it (with push protection) in a fork. Logs are redacted. A real secret is rotated first, then removed; a false positive is allowed with a `gitleaks:allow` comment on the line or its fingerprint in `.gitleaksignore`.
+- `workflow-audit` runs [zizmor](https://docs.zizmor.sh) on the workflows and fails on any finding: template injection, excessive permissions, persisted credentials, and any action not pinned to a full commit SHA. A finding is ignored only inline, with a reason (`# zizmor: ignore[rule]`).
+
+Both tools are pinned to exact versions in the workflow, which Dependabot does not update: bump them by hand.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
