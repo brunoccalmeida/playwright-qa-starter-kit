@@ -89,6 +89,7 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 
 - npm com `package-lock.json` commitado; versões fixadas exatas (`--save-exact`). Node fixado em `.node-version`.
 - Nunca commitar credenciais; `.env` fica fora do Git.
+- Travas do agente em `.claude/settings.json` (`permissions.deny`): merge `--admin`, force push, push na `main` e leitura/escrita do `.env`. Regra nova vale para `Bash(...)` **e** `PowerShell(...)` e só entra provada por sonda. Elas casam o texto do comando, não são fronteira de segurança (`git push` sem argumentos na `main`, `git -C` e `bash -c` escapam): a fronteira é o ruleset da `main` no GitHub.
 - Vulnerabilidade em dependência transitiva: `overrides` para a versão corrigida, nunca `npm audit fix --force` que rebaixa versão maior.
 - Versão maior é decisão humana: ler as notas de versão e medir o impacto antes de atualizar. Conferir _peer dependencies_ (ex.: `typescript-eslint` limita a versão do TypeScript).
 
