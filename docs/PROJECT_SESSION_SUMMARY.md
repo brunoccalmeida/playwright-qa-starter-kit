@@ -6,13 +6,14 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item           | Estado                                                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Missão atual   | 5 — E2E: jornadas (#6), concluída com o merge deste PR                                                                                           |
-| Próxima missão | 6 — Relatório (#7), seguindo a [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                        |
-| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                     |
-| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`) e `npm audit` (`audit`); `ci-passed` no ruleset |
-| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 + `setup`, 2 deles `test.fail()` (KI-5)  |
+| Item           | Estado                                                                                                                                                                                                         |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual   | 6 — Relatório (#7), concluída com o merge deste PR                                                                                                                                                             |
+| Próxima missão | 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios)                                                                                    |
+| PRs abertos    | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                   |
+| Portões        | `npm run check` (job `check`, inclui a sentinela de ignores), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`) e relatório mesclado (`report`); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
+| Relatório      | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                    |
+| Testes         | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5)                             |
 
 ## Plano de missões
 
@@ -39,7 +40,7 @@ A ordem é de **prioridade, não de dependência**: itens de repositórios difer
 1. ✅ Este repo: Missão 3 (#4), integrada no PR #16.
 2. `uat-automation-framework`: `timeout-minutes` e `persist-credentials: false` em todos os jobs.
 3. ✅ Este repo: `docs/KNOWN_ISSUES.md` em inglês, com a regra de idioma ajustada, e `npm audit` no CI (#17).
-4. Este repo: Missões 4, 5 e 6 (#5, #6, #7: E2E e relatório HTML no GitHub Pages). Depois, README com badges e um "At a Glance", sem o aviso de "Work in progress".
+4. ✅ Este repo: Missões 4, 5 e 6 (#5, #6, #7: E2E e relatório HTML no GitHub Pages). Depois, README com badges e um "At a Glance", sem o aviso de "Work in progress".
 5. `uat-automation-framework`: #129 (flaky no Firefox).
 
 **KI-3 nas propostas comerciais:** o KI-3 (o logout não invalida o token) entra como **exemplo de método**: achar o bug, prová-lo com um teste que afirma o comportamento correto (`test.fail()`) e documentar o impacto. Não entra como vulnerabilidade inédita, porque o Restful Booker Platform é um app de treino com bugs conhecidos.
@@ -383,3 +384,47 @@ Tudo restaurado depois; sem a simulação, a sentinela imprime `TypeScript major
 **Revisor** (agente `reviewer`, diff completo): sem achado bloqueante; escopo da #6 cumprido. Quatro achados, todos aplicados. (1) Médio: o KI-1 (entregável do cliente) ainda dizia que `PUT`/`DELETE` não tinham sido sondados de novo, contradizendo o `DELETE` reverificado nesta missão; texto atualizado, e o comentário da fixture `room` deixou de dizer "no spike". (2) Baixo: a asserção do heading "Booking Confirmed" não tinha mutação (o mutante "sem contorno" falha antes, no `goto`); mutação feita e registrada no RED. (3) Baixo: o comentário do 404 no contorno dizia ser "a resposta que o app daria", sem evidência (o app responde 500); agora diz o que o código faz. (4) Baixo: o `test.fail()` do KI-5 no admin presume labels iguais aos cabeçalhos; uma correção com outros textos não seria anunciada. Premissa escrita no teste, com a instrução de conferir o formulário quando o KI-5 for dado como corrigido.
 
 **Próxima missão:** 6 — Relatório (#7): relatório HTML no GitHub Pages (resolvendo antes a senha nos títulos de passo `Fill`), Firefox no CI e execução noturna.
+
+## Missão 6 — Relatório (#7)
+
+**Entregue:** relatório HTML mesclado (blobs dos jobs `api` e `e2e`) publicado no [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/) a cada merge e na execução noturna; projetos `chromium` e `firefox`; senha e corpos de resposta fora dos títulos de passo (`fillSecret`, regra de ESLint, `expectJson` sem mensagem no `expect`); Pages ligado em modo "GitHub Actions"; issue #21 para a opção `secrets` oficial.
+
+**O que o relatório vazava (sondas no relatório HTML decodificado, antes de publicar):**
+
+| Vazamento                                                            | Quando               | Tratamento                                                     |
+| -------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------- |
+| `Fill "password"` (todo método de digitação põe o valor no título)   | toda execução        | `fillSecret` (passo `Evaluate`) + regra `no-restricted-syntax` |
+| 82 títulos `HTTP status of <url>\nBody: ...`, com tokens de login    | toda execução        | `expectJson`/`expectStatus` lançam `Error`: corpo só na falha  |
+| `value="<senha>"` no log da asserção e `textbox "Password": <senha>` | só em falha no login | Risco documentado (README); #21 acompanha a censura oficial    |
+
+**Decisões:**
+
+- **Fonte + issue, sem guarda caseiro** (escolha do usuário entre três caminhos). A opção `secrets` dos reporters entrou no Playwright e foi revertida antes da 1.65 ([#43870](https://github.com/microsoft/playwright/pull/43870)); os mantenedores recomendam tratar relatórios como sensíveis, o que um Pages público não permite. Um guarda que procurasse o valor da senha não funciona aqui: a senha do demo é `password`, palavra que aparece legitimamente no relatório (`id="password"`, títulos de teste). Princípio: OWASP Logging Cheat Sheet ("authentication passwords" não se registram) e YAGNI para o guarda que a opção oficial vai substituir.
+- **`fillSecret` grava pelo setter do protótipo** (`Reflect.set(HTMLInputElement.prototype, 'value', ...)`) e dispara só `input`, como o `fill`. O React sobrescreve o setter do input controlado, por isso `input.value = x` seria ignorado. Antes, `toBeEditable()` faz a checagem que o `fill` faria.
+- **Mensagem do `expect` vira título do passo, mesmo passando.** Por isso o `expectJson` trocou `expect(valor, mensagem)` por `throw new Error(...)`, o padrão que o arquivo já usava para JSON inválido e contrato.
+- **Um `setup` para os dois navegadores:** a sessão é um cookie, válido em qualquer navegador; um login por execução e um único `admin.json` (dois setups paralelos escreveriam o mesmo arquivo).
+- **zstd no Firefox:** o `route.fetch()` do contorno do KI-1 reaproveita os cabeçalhos do navegador; o Firefox aceita zstd, que o fetch do Playwright não descomprime ([#37032](https://github.com/microsoft/playwright/issues/37032), fechada sem correção). O contorno pede só `gzip, deflate, br`.
+- **CI:** blob por job com nome explícito (`PLAYWRIGHT_BLOB_OUTPUT_NAME`: o padrão não garante nomes diferentes entre jobs); `report` com `!cancelled()` (execução com falha é o relatório que mais importa), sem `--config` (o `merge-reports` carrega config vazia, então o job não recebe credenciais) e tolerando a saída 1 do `merge-reports` quando um teste falhou, mas exigindo `index.html`; `report` no `ci-passed` (relatório quebrado barra o merge); `deploy` fora do `ci-passed` (nunca roda em PR) e excluído explicitamente da sentinela; permissões `pages`/`id-token` só no `deploy`; `concurrency: pages` sem cancelar; ambiente `github-pages` só aceita a `main` (segunda camada além do `if`). Cron `23 6 * * *`: fora da hora cheia, quando o GitHub mais atrasa agendamentos; agendamentos são desligados após 60 dias sem atividade no repositório.
+- **`audit` também roda à noite** (o workflow inteiro roda): repete o que os alertas do Dependabot já dizem, sem custo relevante. Revoga o "sem `schedule`" do extra #17, que era sobre o job isolado.
+- **Screenshot em falha no CI:** com o trace desligado (guardaria credenciais e cookie), é a evidência visual do relatório; o campo de senha aparece como pontos.
+
+**Fontes:** [playwright.dev/docs/test-sharding](https://playwright.dev/docs/test-sharding) (blob, `merge-reports`, `merge-multiple`), [playwright.dev/docs/test-reporters](https://playwright.dev/docs/test-reporters) (opções do blob e do HTML), [notas da 1.65](https://playwright.dev/docs/release-notes), [docs do GitHub sobre Pages com workflow](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages), issues do Playwright #36800, #38673, #43795, #43870, #37032, #43413; código do `playwright-core` 1.64.1 (`renderTitleForCall`, decodificação do fetch) e do `merge-reports` (`loadEmptyConfigForMergeReports`).
+
+**RED:**
+
+1. Relatório HTML de `setup` + `api`, decodificado (o HTML guarda os dados num zip em base64): `Fill "password"`, 82 títulos `HTTP status of` e tokens como `{"token":"0DJ7givJd2wj2tM4"}`. Depois: zero dos três, também no relatório mesclado de api + chromium + firefox.
+2. Sonda com senha distinta (`Zq9ProbeSecret`) e asserção falhando: senha no `Received:`, no log `value="..."` e no snapshot do `error-context.md`. Foi o que mostrou que a correção na fonte não basta para falhas.
+3. Regra de lint nova sobre o código antigo: `admin-login-page.ts 31:11 The step title would show this secret in the report: use fillSecret`.
+4. Mutações do `fillSecret`: sem nenhum evento, o `setup` falha (`element(s) not found`); sem `input` mas com `change`, o mutante sobreviveu (o React escuta os dois), por isso ficou só o `input`.
+5. Mutações das mensagens do `expectJson`: 200 → 201 dá `Expected HTTP 201, received 200: .../api/auth/login Body: {...}`; Content-Type contra `application/xml` dá `Expected a JSON Content-Type, received "application/json": ...`.
+6. `--project=firefox` antes do projeto: `Project(s) "firefox" not found`. Primeira execução no Firefox: `SyntaxError: Unexpected token '(', "(\xb5/\xfd X% &"...` (bytes mágicos do zstd).
+7. Sentinela simulada com o `yaml` do projeto: sem `report` no `needs`, `MISMATCH`.
+8. Estabilidade: chromium + firefox com `--repeat-each=3`, 55 de 55; suíte completa, 46 de 46.
+
+**Achados:**
+
+- **Bug do Firefox/Playwright, não do app nem do teste:** `browserContext.close: Protocol error ... "_maybeDontRestoreTabs"` uma vez em 110 execuções locais ([#43413](https://github.com/microsoft/playwright/issues/43413), fechada como _not planned_; relatos na 1.64.1 no Windows sob carga). No CI, os `retries` o marcam como _flaky_. Sem contorno; se ficar frequente, abrir issue.
+- O `merge-reports` sai com 1 quando um teste mesclado falhou: sem tratar, a noite com falha nunca seria publicada.
+- O relatório JSON não lista passos de ação (só `test.step`): não serve para auditar vazamento em títulos; a sonda precisa decodificar o HTML.
+
+**Próxima missão:** 7 — Documentação (#8): `docs/ADAPTING.md` (incluir o cuidado com relatório de cliente: conta de teste dedicada, senha aleatória, relatório privado até a #21), README em inglês e pt-BR, badges e "At a Glance", sem o aviso de "Work in progress".

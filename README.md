@@ -15,8 +15,8 @@ npm ci            # install the exact locked dependencies
 cp .env.example .env
 npm run check     # type-check, lint, format check and dependency-ignore sentinel
 npm run test:api  # API tests (no browser needed)
-npx playwright install chromium
-npm run test:e2e  # browser tests (Chromium)
+npx playwright install chromium firefox
+npm run test:e2e  # browser tests (Chromium and Firefox)
 ```
 
 Configuration comes from environment variables ([.env.example](.env.example)), validated at startup by [src/config/env.ts](src/config/env.ts): a missing or invalid variable stops the run with a message naming it. Variables set in the shell take precedence over `.env`.
@@ -34,12 +34,16 @@ Configuration comes from environment variables ([.env.example](.env.example)), v
 - **Data factories** ([src/data/factories.ts](src/data/factories.ts)) build unique payloads (name suffixes, random future dates): the target app is a shared environment, so tests never rely on existing data or on each other. Never assert that a new resource is empty: the environment periodically wipes data and can hand a new room the bookings of an old one.
 - **Page objects** ([src/pages/](src/pages/)) expose user-facing locators and actions; tests make the assertions. A page's `expectLoaded()` waits for proof that the page is ready, not for an intermediate state such as a URL that changes before the content renders.
 - **Admin session:** the `setup` project logs in through the UI once per run and saves the session to `playwright/.auth/admin.json` (ignored by Git: it grants access to the admin account). E2E tests run as a guest; an admin spec opts in with `test.use({ storageState: ADMIN_SESSION })` ([tests/e2e/fixtures.ts](tests/e2e/fixtures.ts)).
+- **Browsers:** each journey runs on Chromium and on Firefox (projects `chromium` and `firefox`); both reuse the one admin session, a cookie valid in any browser.
+- **Secrets stay out of the report:** Playwright titles input steps with the value (`Fill "<value>"`), so a password is typed with `fillSecret` ([src/pages/fill-secret.ts](src/pages/fill-secret.ts)), and ESLint rejects passing a password, secret or token to `fill` and the keyboard methods. A test that fails mid-login can still print it in the error details: treat the report of a client with real credentials as sensitive.
 - **Known application bugs** are tests marked `test.fail()` that link to [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md): they assert the correct behaviour, and start "failing" when the bug is fixed.
 - **Workarounds for blocking bugs:** when an app bug blocks a whole journey, the browser test replaces only the broken call with `page.route` and keeps the rest real ([src/pages/known-issue-workarounds.ts](src/pages/known-issue-workarounds.ts)); the bug itself stays tracked by its `test.fail()` test. Example: the reservation page is blank because `GET /api/room/{id}` returns 500 (KI-1), so the booking journey serves that room from `GET /api/room`.
 
 ## Continuous integration
 
 Every pull request runs the [CI workflow](.github/workflows/ci.yml). `main` is protected by a ruleset: changes land only through a squash-merged pull request whose `ci-passed` check is green on an up-to-date branch. `ci-passed` is the single required check; it succeeds only when every other job of the workflow succeeded, so new jobs are added to its `needs`, never to the ruleset.
+
+**Test report:** the `api` and `e2e` jobs each write a blob report, and the `report` job merges them into one HTML report (also on pull requests, as the `github-pages` artifact). The `deploy` job publishes the report of `main` on [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/): after each merge and after the nightly run against the live app (06:23 UTC). Failing runs are published too: they are the report most worth reading. Traces stay off in CI because they would store the credentials; a failed test keeps a screenshot.
 
 The `api` and `e2e` jobs read the admin credentials from the repository secrets `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Set them both as **Actions** and as **Dependabot** secrets: workflows triggered by Dependabot can only read Dependabot secrets.
 
