@@ -14,12 +14,13 @@
     "lint": "eslint --max-warnings=0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps && npm run check:known-issues",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps && npm run check:known-issues && npm run check:playwright-image",
     "test": "playwright test",
     "test:api": "playwright test --project=api",
     "test:e2e": "playwright test --project=chromium --project=firefox",
     "check:deps": "node scripts/check-dependency-ignores.ts",
-    "check:known-issues": "node scripts/check-known-issues.ts"
+    "check:known-issues": "node scripts/check-known-issues.ts",
+    "check:playwright-image": "node scripts/check-playwright-image.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
