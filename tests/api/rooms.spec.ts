@@ -1,4 +1,3 @@
-import { bookingSchema } from '../../src/api/booking-api.ts';
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema, roomSchema } from '../../src/api/room-api.ts';
 import { errorListSchema, successSchema } from '../../src/api/schemas.ts';
@@ -15,11 +14,11 @@ test.describe('GET /api/room', () => {
 
   test('leaves out a room already booked for the requested dates', async ({
     roomApi,
-    bookingApi,
+    createBooking,
     room,
   }) => {
     const stay = futureStay();
-    await expectJson(await bookingApi.create(newBooking(room.roomid, stay)), 201, bookingSchema);
+    await createBooking(newBooking(room.roomid, stay));
 
     const booked = await expectJson(await roomApi.list(stay), 200, roomListSchema);
     const free = await expectJson(await roomApi.list(stayAfter(stay, 7)), 200, roomListSchema);
@@ -31,9 +30,9 @@ test.describe('GET /api/room', () => {
   test.fail(
     'leaves out a room booked for part of the requested dates',
     knownIssue('KI-6'),
-    async ({ roomApi, bookingApi, room }) => {
+    async ({ roomApi, createBooking, room }) => {
       const stay = futureStay(3);
-      await expectJson(await bookingApi.create(newBooking(room.roomid, stay)), 201, bookingSchema);
+      await createBooking(newBooking(room.roomid, stay));
 
       // Starts on the last night of the booking: POST /api/booking rejects it with 409
       const overlapping = stayAfter(stay, -1);

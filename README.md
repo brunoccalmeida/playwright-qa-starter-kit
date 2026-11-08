@@ -13,7 +13,7 @@ The target application is the [Restful Booker Platform](https://automationintest
 
 ## At a Glance
 
-- **Tests:** 27 API · 9 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
+- **Tests:** 29 API · 9 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
 - **Defects found and tracked:** 6 in the application under test, [documented](docs/KNOWN_ISSUES.md) and each asserted by a test that signals when the defect is fixed
 - **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, `npm audit`, secret scanning (gitleaks) and a workflow audit (zizmor)
 - **Live report:** HTML, republished on every merge and every night: 📊 **[View the latest test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**

@@ -83,7 +83,7 @@ If the application does not log in with a username and a password, change the va
 The login code stays, to be adapted in step 5: every browser project depends on it. The rest is specific to hotel bookings.
 
 ```sh
-rm src/api/{booking,message,room}-api.ts src/data/factories.ts
+rm src/api/{booking,message,room}-api.ts src/api/create-booking.ts src/data/factories.ts
 rm src/pages/{home,reservation}-page.ts src/pages/known-issue-workarounds.ts
 rm tests/api/{bookings,messages,rooms}.spec.ts
 rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
@@ -98,7 +98,7 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 | `src/pages/admin-rooms-page.ts` | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
 | `tests/api/auth.spec.ts`        | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
 | `tests/known-issues.ts`         | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
-| `docs/KNOWN_ISSUES.md`          | Delete every `## KI-n` entry.                                                                                  |
+| `docs/KNOWN_ISSUES.md`          | Delete every `## KI-n` entry and the `Test environment limit` section.                                         |
 
 These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
 
