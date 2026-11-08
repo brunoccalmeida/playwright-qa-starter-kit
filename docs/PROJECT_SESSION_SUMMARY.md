@@ -14,7 +14,7 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 | Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues e da imagem do Playwright), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
 | Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                   |
 | Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                                                                      |
-| Testes           | API: 28 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
+| Testes           | API: 29 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
 
 ## Plano de missões
 
@@ -663,13 +663,13 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 
 **Hipóteses:**
 
-| Hipótese                                      | Situação                   | Evidência                                                                                                                                                                                                                                                                                              |
-| --------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Disputa no backend com 409 genérico           | **Descartada**             | O `route.ts` do [código público](https://github.com/mwinteringham/restful-booker-platform) repassa o status do serviço Java; falha interna seria 500. O `BookingService` só devolve CONFLICT para data inválida ou conflito no banco. Ressalva: é o código do repositório, e o implantado pode diferir |
-| Partida a frio por ociosidade dos nossos runs | **Enfraquecida**           | Os maiores intervalos (672 e 1403 min) passaram sem falha; outros testers também aquecem o ambiente                                                                                                                                                                                                    |
-| Reserva herdada pelo id reiniciado do quarto  | **Principal, não provada** | Um `DatabaseScheduler` por serviço; `seedDB` reinicia os ids e as reservas ficam. Mas exigiria uma reserva cobrindo datas sorteadas em 9 anos, e nenhuma foi capturada: a sonda de leitura (17:57) achou o ambiente recém-limpo, só com o seed                                                         |
+| Hipótese                                      | Situação                               | Evidência                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Disputa no backend com 409 genérico           | **Descartada**                         | O `route.ts` do [código público](https://github.com/mwinteringham/restful-booker-platform) repassa o status do serviço Java; falha interna seria 500. O `BookingService` só devolve CONFLICT para data inválida ou conflito no banco. Ressalva: é o código do repositório, e o implantado pode diferir      |
+| Partida a frio por ociosidade dos nossos runs | **Enfraquecida**                       | Os maiores intervalos (672 e 1403 min) passaram sem falha; outros testers também aquecem o ambiente                                                                                                                                                                                                         |
+| Reserva herdada pelo id reiniciado do quarto  | **Em aberto, com evidência contrária** | A favor: um `DatabaseScheduler` por serviço; `seedDB` reinicia os ids e as reservas ficam. Contra: cada retry usou quarto novo e datas novas, sorteadas em 9 anos, e uma reserva herdada não some em 3 a 5 s. Nenhuma foi capturada: a sonda de leitura (17:57) achou o ambiente recém-limpo, só com o seed |
 
-**Em aberto:** a causa exata. A issue aceita esse desfecho; a próxima ocorrência já registra o estado do quarto. **Ao ver a mensagem nova num run:** se houver reserva cobrindo as datas, a causa é a herança; se não houver nenhuma, o 409 tem outra origem e a hipótese cai.
+**Em aberto:** a causa exata. A issue aceita esse desfecho; a próxima ocorrência já registra o estado do quarto. **Ao ver a mensagem nova num run:** uma reserva cobrindo as datas sustenta a herança; lista vazia não decide, porque o quarto é lido depois da recusa e um reset pode ocorrer entre as duas chamadas.
 
 **Decisões:**
 
@@ -685,7 +685,8 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 2. Ponta a ponta (mutação em `accepts a check-in`, `stayAfter(stay, -1)`): 409 real com `Requested: room 25, 2034-05-30 to 2034-06-01` e `Bookings of room 25 now (1): #20: 2034-05-29 to 2034-05-31`.
 3. Uma mutação por asserção do teste novo, todas reprovadas: texto do status; linha `Requested`; listagem vazia; sobrenome na listagem; sobrenome, e-mail e token na mensagem.
 4. Token no erro: requisição a uma porta fechada com cookie falso → `Cookie: token=FAKE-SENTINEL-VALUE` no call log. Por isso a captura descarta o erro.
-5. `--repeat-each=3` em bookings e rooms: 48 de 48.
+5. `catch` da listagem (teste `keeps the refusal...`, com subclasse de `BookingApi` cuja listagem rejeita com o token no erro): vazar o erro na mensagem reprova em `not.toContain(adminToken)`; relançar reprova em `toContain('HTTP 409')`.
+6. `--repeat-each=3` em bookings e rooms: 51 de 51.
 
 **Achados:**
 
@@ -693,5 +694,7 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 - `gh run view --log-failed` e a lista de runs falhos não veem tentativas que terminaram verdes. Para flaky, percorrer `actions/runs/{id}/attempts/{n}/jobs`.
 - A #43 cobre o cookie no call log, fora do escopo daqui: vale para toda requisição autenticada que falhe por rede.
 - **Para a #29:** dois dos três casos passaram no retry dentro do mesmo job. É o argumento concreto para a política.
+
+**Revisor** (agente `reviewer`, diff completo): três achados, todos aplicados. (1) O `catch` da listagem, único caminho com risco real de credencial, não tinha teste; entrou o teste do RED 5. (2) O `docs/ADAPTING.md` não acompanhou: o `create-booking.ts` ficaria órfão no passo 4 e a seção do ambiente ficaria no entregável do cliente; o passo 4 agora remove os dois, o que dispensa ampliar o `grep` do passo 3. (3) "Principal" superestimava a herança: retries com quarto e datas novos e uma janela de segundos pesam contra ela; rebaixada aqui e no `KNOWN_ISSUES.md`, com a ressalva de que lista vazia não decide.
 
 **Próxima missão:** #43 (segurança, desbloqueada, vem antes pela ordem de prioridade), depois #29.

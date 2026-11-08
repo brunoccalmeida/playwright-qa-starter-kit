@@ -1,4 +1,6 @@
-import { bookingListSchema, bookingSchema } from '../../src/api/booking-api.ts';
+import type { APIResponse } from '@playwright/test';
+import { BookingApi, bookingListSchema, bookingSchema } from '../../src/api/booking-api.ts';
+import { createBookingOrExplain } from '../../src/api/create-booking.ts';
 import { expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
@@ -62,6 +64,35 @@ test.describe('POST /api/booking', () => {
     expect(failure).not.toContain(first.lastname);
     expect(failure).not.toContain(clash.lastname);
     expect(failure).not.toContain(clash.email);
+    expect(failure).not.toContain(adminToken);
+  });
+
+  test('keeps the refusal and hides the token when the room cannot be listed', async ({
+    request,
+    createBooking,
+    room,
+    adminToken,
+  }) => {
+    // A failed request's call log lists its headers, the token cookie included
+    class ListingFails extends BookingApi {
+      override listByRoom(): Promise<APIResponse> {
+        return Promise.reject(new Error(`Cookie: token=${adminToken}`));
+      }
+    }
+    const stay = futureStay(3);
+    await createBooking(newBooking(room.roomid, stay));
+
+    const failure = await createBookingOrExplain(
+      new ListingFails(request),
+      newBooking(room.roomid, stay),
+      adminToken,
+    ).then(
+      () => 'created',
+      (error: unknown) => String(error),
+    );
+
+    expect(failure).toContain('HTTP 409');
+    expect(failure).toContain('could not be listed');
     expect(failure).not.toContain(adminToken);
   });
 
