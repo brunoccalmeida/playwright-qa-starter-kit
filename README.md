@@ -1,10 +1,28 @@
 # Playwright QA Starter Kit
 
+[![CI](https://github.com/brunoccalmeida/playwright-qa-starter-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/brunoccalmeida/playwright-qa-starter-kit/actions/workflows/ci.yml)
+[![Test report](https://img.shields.io/badge/test%20report-GitHub%20Pages-blue)](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)
+[![Playwright version](https://img.shields.io/github/package-json/dependency-version/brunoccalmeida/playwright-qa-starter-kit/dev/%40playwright%2Ftest)](package.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**English** | **[Português (Brasil)](README.pt-BR.md)**
+
 A reusable Playwright + TypeScript starter kit for QA engagements: E2E and API tests, CI on GitHub Actions and a published HTML report.
 
 The target application is the [Restful Booker Platform](https://automationintesting.online), a hotel booking demo built for testers.
 
-> 🚧 Work in progress: the kit is being built mission by mission.
+## At a Glance
+
+- **Tests:** 27 API · 9 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
+- **Defects found and tracked:** 6 in the application under test, [documented](docs/KNOWN_ISSUES.md) and each asserted by a test that signals when the defect is fixed
+- **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, `npm audit`, secret scanning (gitleaks) and a workflow audit (zizmor)
+- **Live report:** HTML, republished on every merge and every night: 📊 **[View the latest test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
+- **Reusable:** a [step-by-step guide](docs/ADAPTING.md) takes the kit to a new client application
+- **AI-assisted, same gates:** built with an AI coding agent that gets no shortcut past CI, under [written project rules](.github/copilot-instructions.md): every test was seen failing before it counted
+
+## Reuse it for your application
+
+[docs/ADAPTING.md](docs/ADAPTING.md) covers the decisions to make first (private repository, test environment, who can read the report), what to replace and what carries over, the GitHub settings that do not travel with the code, and how to prove the result works.
 
 ## Development
 
@@ -55,10 +73,12 @@ The `audit` job runs `npm audit` and fails on any known vulnerability, so a pull
 
 Two jobs guard the repository itself:
 
-- `secret-scan` runs [gitleaks](https://github.com/gitleaks/gitleaks) over the whole history of the tested commit (on a pull request, what `main` would contain), so a secret committed and deleted later in the same pull request still fails it. Other branches are left to GitHub secret scanning, which watches every branch for known provider tokens; enable it (with push protection) in a fork. Logs are redacted. A real secret is rotated first, then removed; a false positive is allowed with a `gitleaks:allow` comment on the line or its fingerprint in `.gitleaksignore`.
+- `secret-scan` runs [gitleaks](https://github.com/gitleaks/gitleaks) over the whole history of the tested commit (on a pull request, what `main` would contain), so a secret committed and deleted later in the same pull request still fails it. Other branches are left to GitHub secret scanning, which watches every branch for known provider tokens; enable it (with push protection) in a copy of the kit. Logs are redacted. A real secret is rotated first, then removed; a false positive is allowed with a `gitleaks:allow` comment on the line or its fingerprint in `.gitleaksignore`.
 - `workflow-audit` runs [zizmor](https://docs.zizmor.sh) on the workflows and fails on any finding: template injection, excessive permissions, persisted credentials, and any action not pinned to a full commit SHA. A finding is ignored only inline, with a reason (`# zizmor: ignore[rule]`).
 
 Both tools are pinned to exact versions in the workflow, which Dependabot does not update: bump them by hand.
+
+**AI agent guardrails:** the rules for AI coding agents live in [.github/copilot-instructions.md](.github/copilot-instructions.md), shared by Claude Code and GitHub Copilot. [.claude/settings.json](.claude/settings.json) denies the agent admin merges, force pushes, pushes to `main` and reading or editing `.env`. Those rules match the text of a command, so they are a safety net and not a security boundary: the boundary is the ruleset on `main`, which has no bypass and applies to everyone.
 
 ## License
 

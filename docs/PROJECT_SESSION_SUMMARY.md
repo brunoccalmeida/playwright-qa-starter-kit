@@ -8,8 +8,8 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item             | Estado                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual     | Extra — job `e2e` no container oficial do Playwright (#24), concluída com o merge deste PR                                                                                                                                                                                                                                                                       |
-| Próxima missão   | 7 — Documentação (#8), com o README de badges e "At a Glance" da [ordem de trabalho](#ordem-de-trabalho-entre-repositórios). A #37 (Betterleaks) ganhou a label `blocked`: espera o v2 estável                                                                                                                                                                   |
+| Missão atual     | 7 — Documentação (#8), concluída com o merge deste PR                                                                                                                                                                                                                                                                                                            |
+| Próxima missão   | #29 (política escrita de testes flaky): não há bloqueio nem segurança desbloqueada (#37 espera o Betterleaks v2) e é a pendência mais visível para o cliente                                                                                                                                                                                                     |
 | PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                                                                     |
 | Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues e da imagem do Playwright), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
 | Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                   |
@@ -41,7 +41,7 @@ A ordem é de **prioridade, não de dependência**: itens de repositórios difer
 1. ✅ Este repo: Missão 3 (#4), integrada no PR #16.
 2. `uat-automation-framework`: `timeout-minutes` e `persist-credentials: false` em todos os jobs.
 3. ✅ Este repo: `docs/KNOWN_ISSUES.md` em inglês, com a regra de idioma ajustada, e `npm audit` no CI (#17).
-4. ✅ Este repo: Missões 4, 5 e 6 (#5, #6, #7: E2E e relatório HTML no GitHub Pages). Depois, README com badges e um "At a Glance", sem o aviso de "Work in progress".
+4. ✅ Este repo: Missões 4, 5 e 6 (#5, #6, #7: E2E e relatório HTML no GitHub Pages). README com badges e um "At a Glance", sem o aviso de "Work in progress", entregue na Missão 7 (#8).
 5. `uat-automation-framework`: #129 (flaky no Firefox).
 
 **KI-3 nas propostas comerciais:** o KI-3 (o logout não invalida o token) entra como **exemplo de método**: achar o bug, prová-lo com um teste que afirma o comportamento correto (`test.fail()`) e documentar o impacto. Não entra como vulnerabilidade inédita, porque o Restful Booker Platform é um app de treino com bugs conhecidos.
@@ -614,3 +614,39 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 **Revisor** (agente `reviewer`, diff completo antes do PR): quatro achados, todos aplicados. (1) Médio: faltava o RED do container, e a afirmação "subir só a tag faz o job falhar alto" era inferência; virou a sonda 4, desenhada para o caso que a sentinela não vê. (2) Baixo: comentário do `report` ainda citava "failed browser install". (3) Baixo: a sentinela lia o `node_modules`; agora lê o lockfile. (4) Baixo: referência só por digest escapava do filtro; agora reprova no formato. `services:` e `docker://` ficam fora (o projeto não usa; YAGNI), dito no comentário.
 
 **Próxima missão:** 7 — Documentação (#8).
+
+## Missão 7 — Documentação (#8)
+
+**Entregue:** `docs/ADAPTING.md` (em inglês: guia passo a passo para levar o kit ao app de um novo cliente); `README.md` com badges, "At a Glance" e seção de reaproveitamento, sem o aviso de "Work in progress"; `README.pt-BR.md` com link cruzado; `tests/known-issues.ts` e `scripts/check-known-issues.ts` aceitam o mapa de known issues vazio.
+
+**Decisões:**
+
+- **Repositório novo, não fork:** "Public repository forks are public" e "You cannot change the visibility of a fork by itself". O guia clona, apaga o `.git` e cria o repositório. O caminho "Use this template" exigiria ligar o `is_template` neste repositório (hoje `false`), e não muda o resultado: um único commit inicial.
+- **O guia não assume relatório público:** publicar no Pages de forma restrita exige GitHub Enterprise Cloud; fora disso, o relatório é legível por quem tiver a URL. O guia oferece os dois caminhos (publicar, ou apagar o `deploy` e baixar o artefato `github-pages`, que expira em 1 dia pelo padrão da `upload-pages-artifact`).
+- **Pages configurado pela interface no guia, não por `gh api`:** a documentação da API não diz se `source` é dispensável com `build_type=workflow`; o guia só traz o comando que pôde ser conferido.
+- **Corrigir o kit, não contornar no guia:** o mapa de known issues vazio reprovava o lint; um KI de enfeite faria o guia funcionar deixando dado falso num entregável do cliente.
+- **Contagens no "At a Glance", sem sentinela:** seguem o padrão do `uat-automation-framework` e ajudam quem avalia o kit, mas envelhecem (YAGNI: atualizar à mão ao mudar o número de testes). O relatório publicado é a fonte da verdade. Medido com `playwright test --list`: 27 API, 9 E2E por navegador + `setup`, 46 no total. O mesmo vale para manter o README em inglês e o em português alinhados.
+- **Badge da versão do Playwright dinâmico** (shields lendo o `package.json`), porque um valor fixo envelheceria a cada PR do Dependabot.
+
+**Fontes:** [visibilidade de forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-permissions-and-visibility-of-forks), [repositório a partir de template](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template), [planos do GitHub](https://docs.github.com/en/get-started/learning-about-github/githubs-plans), [visibilidade do site do Pages](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site), [secret scanning](https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning), [badge de workflow](https://docs.github.com/en/actions/how-tos/monitor-workflows/add-a-status-badge), [API de rulesets](https://docs.github.com/en/rest/repos/rules#create-a-repository-ruleset), `action.yml` da `upload-pages-artifact` (retenção padrão).
+
+**RED** (ensaio do guia numa cópia descartável no scratchpad, clonada do GitHub):
+
+1. Passo 2, sem variáveis: `npx playwright test --list` → `Invalid environment configuration` nomeando `BASE_URL`, `ADMIN_USERNAME` e `ADMIN_PASSWORD`.
+2. Passo 4, depois de apagar o app de exemplo: `npx tsc` listou os imports quebrados de `tests/fixtures.ts`, `tests/e2e/fixtures.ts` e `src/pages/admin-rooms-page.ts`, que viraram a tabela de edições do guia.
+3. Mapa de known issues vazio, antes da correção: `npm run check` reprovado no ESLint com 3 erros de `restrict-template-expressions` (`never` em `tests/known-issues.ts`, `unknown` em `scripts/check-known-issues.ts`). Depois da correção: saída 0.
+4. Estado final do ensaio: `npm run check` saída 0; 6 testes de API e 5 de E2E (setup + 2 por navegador) passando contra o app real.
+5. Sentinela: KI só no mapa → `tests/known-issues.ts and docs/KNOWN_ISSUES.md disagree`, saída 1.
+6. Renomear o pacote: `npm install --package-lock-only` atualiza o lockfile e `npm ci` continua passando.
+7. Links: script no scratchpad resolveu os 68 links relativos e âncoras dos três documentos (0 quebrados), e todos os externos responderam 200, incluindo os quatro badges.
+
+**Não ensaiado** (exige um repositório novo no GitHub; pendência registrada em issue própria): o `gh repo create --push` do passo 2, o passo 6 (secrets, merge settings, ruleset, caminho "Keep the report private") e o passo 7 inteiro, inclusive o PR bloqueado. O JSON do ruleset foi escrito a partir do `GET` do ruleset real e dos campos obrigatórios da API, mas não foi executado.
+
+**Revisor** (agente `reviewer`, diff completo): sete achados, todos aplicados. (1) Alto: o passo 2 publicava o workflow ainda apontando para o demo; depois do passo 6, a execução noturna enviaria as credenciais do cliente a um site de terceiros. O `BASE_URL` agora muda antes do primeiro commit. (2) Médio: "one manual step" ignorava as versões do gitleaks e do zizmor. (3) Médio: a Missão extra das travas adiou para cá a descrição da configuração do agente; entrou nos dois READMEs. (4) Baixo: faltava criar a branch antes de os commits do passo 3 esbarrarem no ruleset. (5) Baixo: a regra dos 60 dias vale só para repositório público (confirmado em "Events that trigger workflows"); o comentário do `ci.yml` continua certo, porque este repositório é público. (6) Baixo: o `admin-login.spec.ts` ficava fora do passo 5. (7) Baixo: a nota "Não ensaiado" subdeclarava. Descartada só a dúvida sobre os badges: o conteúdo renderizado foi lido (`@playwright/test: 1.64.1`, `CI - passing`), não apenas o status 200.
+
+**Achados:**
+
+- O PowerShell 5.1 corrompe as aspas duplas de um `--jq` passado ao `gh`; o Bash preserva.
+- O kit tem dois pontos amarrados ao demo que nenhum portão vê num clone: a URL de `tests/known-issues.ts` e o `BASE_URL` duplicado no workflow. O `grep` do passo 3 os encontra.
+
+**Próxima missão:** #29 (política escrita de testes flaky).

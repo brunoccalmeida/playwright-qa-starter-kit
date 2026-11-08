@@ -13,7 +13,8 @@ const markdown = readFileSync(new URL(`../${doc}`, import.meta.url), 'utf8');
 const inDoc = [...markdown.matchAll(/^## (KI-\d+): (.+)$/gm)].map(
   ([, id, title]) => `${id ?? ''}: ${title ?? ''}`,
 );
-const inMap = Object.entries(knownIssueTitles).map(([id, title]) => `${id}: ${title}`);
+// <string>: an empty map (a project with no known issues yet) would infer `unknown`
+const inMap = Object.entries<string>(knownIssueTitles).map(([id, title]) => `${id}: ${title}`);
 
 const missingInMap = inDoc.filter((heading) => !inMap.includes(heading));
 const missingInDoc = inMap.filter((heading) => !inDoc.includes(heading));
