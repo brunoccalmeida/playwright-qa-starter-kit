@@ -6,15 +6,15 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 ## Estado atual
 
-| Item             | Estado                                                                                                                                                                                                                                                                                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual     | Extra — 409 intermitente na reserva (#42), concluída com o merge deste PR                                                                                                                                                                                                                                                                                        |
-| Próxima missão   | #43 (cookie no call log de requisição falha): segurança desbloqueada, vem antes pela ordem de prioridade; depois #29 (política de flaky), que recebe o caso da #42                                                                                                                                                                                               |
-| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                                                                     |
-| Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues e da imagem do Playwright), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
-| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                   |
-| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                                                                      |
-| Testes           | API: 29 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
+| Item             | Estado                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missão atual     | Extra — cookie no call log de requisição falha (#43), concluída com o merge deste PR                                                                                                                                                                                                                                                                                                      |
+| Próxima missão   | #29 (política de flaky), que recebe o caso da #42                                                                                                                                                                                                                                                                                                                                         |
+| PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                                                                                              |
+| Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues, da imagem do Playwright e da redação do relatório), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
+| Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                                            |
+| Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                                                                                               |
+| Testes           | API: 29 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                                           |
 
 ## Plano de missões
 
@@ -698,3 +698,47 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 **Revisor** (agente `reviewer`, diff completo): três achados, todos aplicados. (1) O `catch` da listagem, único caminho com risco real de credencial, não tinha teste; entrou o teste do RED 5. (2) O `docs/ADAPTING.md` não acompanhou: o `create-booking.ts` ficaria órfão no passo 4 e a seção do ambiente ficaria no entregável do cliente; o passo 4 agora remove os dois, o que dispensa ampliar o `grep` do passo 3. (3) "Principal" superestimava a herança: retries com quarto e datas novos e uma janela de segundos pesam contra ela; rebaixada aqui e no `KNOWN_ISSUES.md`, com a ressalva de que lista vazia não decide.
 
 **Próxima missão:** #43 (segurança, desbloqueada, vem antes pela ordem de prioridade), depois #29.
+
+## Extra — cookie no call log de requisição falha (#43)
+
+**Entregue:** `src/reporting/redacting-reporter.ts`, primeiro da lista de reporters do `playwright.config.ts`; sentinela `scripts/check-report-redaction.ts` (último passo do `npm run check`, com `scripts/report-redaction/`); `fflate` 0.8.3 como dependência de desenvolvimento.
+
+**Fontes consultadas:** [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) (token e sessão fora dos logs); [Redaction Processor do OpenTelemetry](https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/main/processor/redactionprocessor/README.md) (lista de permissão, "designed to fail closed"); [Reporter](https://playwright.dev/docs/api/class-reporter) (silencia sobre mutação e ordem; "will swallow any errors"); PRs [#43334](https://github.com/microsoft/playwright/pull/43334) e [#43870](https://github.com/microsoft/playwright/pull/43870) (`secrets` na camada de reporter, revertido em 03/11/2026, ausente na 1.65.0).
+
+**O que não funciona** (provado por sonda):
+
+| Caminho                     | Resultado                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| `try/catch` e relançar      | A falha fica limpa, mas o `report.jsonl` guarda o erro no _step_, gravado antes da captura  |
+| Cookie pelo jar do contexto | `cookie: token=...` no call log do mesmo jeito: `fetchLog` percorre os headers já mesclados |
+| `secrets` do reporter (#21) | Revertido, e recebe valores conhecidos de antemão; este token nasce na execução             |
+
+**Decisões:**
+
+- **Camada de reporter**, a mesma do desenho do Playwright: a origem não tem opção, e é preciso limpar antes de gravar, não só ao exibir.
+- **Lista de permissão por nome de header:** o que não está em `HARMLESS_HEADERS` é mascarado. O `fetch.ts` registra também os headers de **resposta**, e uma regex só para `cookie` deixaria passar `Set-Cookie`, `Authorization` e `X-Api-Key`.
+- **Só blocos `→`/`←` do call log:** o call log de ação no navegador explica por que um localizador falhou e fica intacto.
+- **`value` cortado a partir de `Call log:`:** é a saída de `util.inspect`, com quebras de linha escapadas, então não dá para ler por linhas.
+- **Falha fechada onde há como falhar:** a regex não lança; só a leitura ou a escrita do anexo lança, e o anexo sai do relatório. Isso substitui o `[redaction failed]` cogitado na discussão.
+- **Sentinela usa os reporters da config real**, em modo CI, contra servidor local (sem depender do app compartilhado), e procura o token em todo o blob, sem listar canais. **`fflate`** para ler o zip: sem dependências e com tipos próprios; a versão tinha quase 6 meses.
+- **Solução temporária:** alterar os objetos do reporter não é documentado; a sentinela torna isso visível. Reavaliar quando o `secrets` sair (#21).
+- **Escopo:** valores em URL e no corpo de resposta não são tratados (`expectJson` já expõe o corpo por decisão anterior); trace continua desligado no CI.
+
+**RED:**
+
+1. Sonda: porta fechada com cookie falso → `Cookie: token=FAKE-SENTINEL-VALUE` na saída e no JSON.
+2. Teste antes do suporte: `ERR_MODULE_NOT_FOUND` em `redacting-reporter.ts`.
+3. Reporter existente, fora da config → `The token reached the terminal output`, `report.jsonl` e os anexos `.md` do blob (canal que a issue não citava).
+4. Mutações, uma por comportamento, com linha de base verde: 16 de 16 reprovadas (lista de permissão, blocos de requisição e de resposta, steps, `errors`, anexos, falha fechada, `message`, `stack`, `value`, `cause`, `onError`, reporter fora da config).
+5. HTML mesclado de verdade (`merge-reports`, zip embutido no `index.html` e `data/`): 0 ocorrências do token, 37 `[REDACTED]`.
+
+**Achados:**
+
+- **Mutação sobrevivente virou correção:** a primeira rodada teve 5 sobreviventes. `result.error` é o mesmo objeto que `errors[0]`: ramo morto, removido. `value`, `cause` e `onError` não eram exercitados: sondas novas, e a de `value` achou um vazamento real.
+- **Sonda sem linha de base não prova nada:** a rodada seguinte deu tudo "killed" com a sentinela já vermelha sem mutação. As mutações só valem depois de uma linha de base verde.
+- **Falso positivo de sonda:** token literal no spec aparece no `snippet` do relatório. Montar o valor em tempo de execução.
+- O `catch` da `createBookingOrExplain` (#42) limpa a mensagem, mas não o step; agora o reporter cobre o step.
+- PowerShell 5.1 descarta aspas internas ao chamar `gh --jq`: usar o Bash.
+- **Sem explicação:** uma execução de `api` + `chromium` terminou com 33 aprovados e testes de reserva reprovados, e a saída se perdeu (filtrada por `tail`). Em seguida: 39 de 39 e `--repeat-each=3` em `api` 87 de 87. O reporter só age depois da falha, mas a causa não foi vista; salvar a saída em arquivo antes de filtrar.
+
+**Próxima missão:** #29 (política escrita de testes flaky).

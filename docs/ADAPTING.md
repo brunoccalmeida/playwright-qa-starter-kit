@@ -100,7 +100,7 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 | `tests/known-issues.ts`         | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
 | `docs/KNOWN_ISSUES.md`          | Delete every `## KI-n` entry and the `Test environment limit` section.                                         |
 
-These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
+These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [redacting-reporter.ts](../src/reporting/redacting-reporter.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
 
 **Check:** `npm run check` exits with 0.
 
