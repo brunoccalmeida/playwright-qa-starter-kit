@@ -1,6 +1,7 @@
 import { test as base } from '@playwright/test';
 import { AuthApi, tokenResponseSchema } from '../src/api/auth-api.ts';
-import { BookingApi } from '../src/api/booking-api.ts';
+import { BookingApi, type NewBooking } from '../src/api/booking-api.ts';
+import { createBookingOrExplain } from '../src/api/create-booking.ts';
 import { expectFound, expectJson } from '../src/api/expect-json.ts';
 import { MessageApi } from '../src/api/message-api.ts';
 import { RoomApi, roomListSchema, type Room } from '../src/api/room-api.ts';
@@ -27,6 +28,8 @@ type ApiFixtures = {
    * DELETE /api/room/{id} returns 500 (KI-1).
    */
   room: Room;
+  /** Creates a booking the test needs; a refusal explains the state of the room. */
+  createBooking: (booking: NewBooking) => ReturnType<typeof createBookingOrExplain>;
 };
 
 export const test = base.extend<ApiFixtures>({
@@ -56,6 +59,9 @@ export const test = base.extend<ApiFixtures>({
     // The create response carries no id: find the room by its unique name
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
     await use(expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName));
+  },
+  createBooking: async ({ bookingApi, adminToken }, use) => {
+    await use((booking) => createBookingOrExplain(bookingApi, booking, adminToken));
   },
 });
 

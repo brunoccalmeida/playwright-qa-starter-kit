@@ -57,3 +57,12 @@ Issues are numbered in the order they were found.
 - **Actual:** the room is left out only when the requested period **contains** the whole booking. With a booking from the 10th to the 13th: requesting 10–13 or 08–16 leaves it out; requesting 11–12 (inside), 12–15 (overlapping the end) or 08–11 (overlapping the start) lists it as available. Booking that period afterward returns 409.
 - **Impact:** guests see the room as available and their booking fails.
 - **Test:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `GET /api/room › leaves out a room booked for part of the requested dates`.
+
+## Test environment limit: rooms and bookings reset independently
+
+This is a limit of the shared environment, not a numbered defect: no test asserts it.
+
+- **How it works:** the [application source](https://github.com/mwinteringham/restful-booker-platform) has one reset schedule per service. Resetting rooms restarts their ids at 1; bookings stay until the booking service runs its own reset. Until then, a new room can inherit bookings from an older room with the same id. A new room inheriting 11 bookings was observed during this suite's development.
+- **Consequence for the tests:** a test never assumes that a new room is empty, and each one books random dates one to ten years ahead.
+- **Open question:** in 3 of the 36 CI attempts up to 2026-11-08, the first bookings of a run were refused with `409 {"error":"Failed to create booking"}` for 3 to 5 seconds, then bookings worked again. In the application source, this 409 comes from the booking service itself (a date conflict in that room, or invalid dates), not from a generic error. An inherited booking is the leading explanation, but it would have to span the random dates, and none has been captured yet.
+- **Diagnosis:** a refused booking now reports the room, the requested dates and the dates the room holds at that moment, so the next occurrence can confirm or rule this out.

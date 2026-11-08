@@ -8,13 +8,13 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item             | Estado                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missão atual     | 7 — Documentação (#8), concluída com o merge deste PR                                                                                                                                                                                                                                                                                                            |
-| Próxima missão   | #29 (política escrita de testes flaky): não há bloqueio nem segurança desbloqueada (#37 espera o Betterleaks v2) e é a pendência mais visível para o cliente                                                                                                                                                                                                     |
+| Missão atual     | Extra — 409 intermitente na reserva (#42), concluída com o merge deste PR                                                                                                                                                                                                                                                                                        |
+| Próxima missão   | #43 (cookie no call log de requisição falha): segurança desbloqueada, vem antes pela ordem de prioridade; depois #29 (política de flaky), que recebe o caso da #42                                                                                                                                                                                               |
 | PRs abertos      | nenhum após o merge (Dependabot pode abrir outros: tratar no início do chat)                                                                                                                                                                                                                                                                                     |
 | Portões          | `npm run check` (job `check`, inclui as sentinelas de ignores, de known issues e da imagem do Playwright), testes de API (`api`), E2E (`e2e`), `npm audit` (`audit`), relatório mesclado (`report`), segredos no histórico (`secret-scan`, gitleaks) e auditoria dos workflows (`workflow-audit`, zizmor); `ci-passed` no ruleset. `deploy` (Pages) só na `main` |
 | Travas do agente | `.claude/settings.json` nega merge `--admin`, force push, push na `main` e leitura/escrita do `.env` (Bash e PowerShell); fronteira real é o ruleset da `main`                                                                                                                                                                                                   |
 | Relatório        | [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/), a cada merge e na execução noturna (06:23 UTC)                                                                                                                                                                                                                                      |
-| Testes           | API: 27 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
+| Testes           | API: 28 (auth, rooms, bookings, messages), 7 deles `test.fail()` (KI-1, KI-2, KI-3, KI-4, KI-6); E2E: 9 por navegador (Chromium e Firefox) + `setup`, 2 deles `test.fail()` (KI-5); todos os `test.fail()` usam `knownIssue('KI-n')` e têm a tag `@known-issue`                                                                                                  |
 
 ## Plano de missões
 
@@ -650,3 +650,48 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 - O kit tem dois pontos amarrados ao demo que nenhum portão vê num clone: a URL de `tests/known-issues.ts` e o `BASE_URL` duplicado no workflow. O `grep` do passo 3 os encontra.
 
 **Próxima missão:** #29 (política escrita de testes flaky).
+
+## Extra — 409 intermitente na primeira reserva (#42)
+
+**Entregue:** fixture `createBooking` e `src/api/create-booking.ts`: reserva recusada informa status, corpo, quarto, datas pedidas e as reservas do quarto naquele momento (só id e datas). Teste novo fixa a mensagem e a ausência de nome, e-mail e token. Seção "Test environment limit" no `docs/KNOWN_ISSUES.md`. Issue #43 aberta.
+
+**Levantamento** (scripts no scratchpad, pela API de jobs, que alcança tentativas que terminaram verdes):
+
+- 49 runs, 51 tentativas, 74 jobs `api` e `e2e`, nenhum log indisponível (histórico inteiro do repositório, de 05 a 08/11/2026; a retenção é de 90 dias).
+- O erro aparece em **3 das 36 tentativas** do job `api` que rodaram testes de reserva: 42301533569 (06/11 22:02), 42304669865 (06/11 22:26) e 42505286187 (08/11 17:30). A issue conhecia só a última.
+- Nos três casos falharam **os mesmos dois testes**, os primeiros da execução a criar quarto e reserva, durante 3 a 5 s; a reserva seguinte funcionou. Só no terceiro os retries se esgotaram.
+
+**Hipóteses:**
+
+| Hipótese                                      | Situação                   | Evidência                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Disputa no backend com 409 genérico           | **Descartada**             | O `route.ts` do [código público](https://github.com/mwinteringham/restful-booker-platform) repassa o status do serviço Java; falha interna seria 500. O `BookingService` só devolve CONFLICT para data inválida ou conflito no banco. Ressalva: é o código do repositório, e o implantado pode diferir |
+| Partida a frio por ociosidade dos nossos runs | **Enfraquecida**           | Os maiores intervalos (672 e 1403 min) passaram sem falha; outros testers também aquecem o ambiente                                                                                                                                                                                                    |
+| Reserva herdada pelo id reiniciado do quarto  | **Principal, não provada** | Um `DatabaseScheduler` por serviço; `seedDB` reinicia os ids e as reservas ficam. Mas exigiria uma reserva cobrindo datas sorteadas em 9 anos, e nenhuma foi capturada: a sonda de leitura (17:57) achou o ambiente recém-limpo, só com o seed                                                         |
+
+**Em aberto:** a causa exata. A issue aceita esse desfecho; a próxima ocorrência já registra o estado do quarto. **Ao ver a mensagem nova num run:** se houver reserva cobrindo as datas, a causa é a herança; se não houver nenhuma, o 409 tem outra origem e a hipótese cai.
+
+**Decisões:**
+
+- **Fixture em vez de método no `BookingApi`:** os clientes devolvem a `APIResponse` crua e o teste decide o que afirmar (Missão 2). `createBooking` serve só a quem _precisa_ que a reserva exista; quem testa a recusa continua com `bookingApi.create`.
+- **Sem custo no caminho feliz:** a listagem só roda na falha, e o `adminToken` já é criado pela fixture `room`.
+- **Só id e datas das reservas:** elas podem ser de outras pessoas e o relatório é público (minimização de dados).
+- **O diagnóstico nunca falha:** perder o detalhe não pode substituir a recusa original.
+- **Sem correção no teste:** mudar datas ou quartos sem causa provada seria chute (regra de diagnóstico).
+
+**RED:**
+
+1. Teste antes do suporte: specs escritos antes da fixture → `Test has unknown parameter "createBooking".`
+2. Ponta a ponta (mutação em `accepts a check-in`, `stayAfter(stay, -1)`): 409 real com `Requested: room 25, 2034-05-30 to 2034-06-01` e `Bookings of room 25 now (1): #20: 2034-05-29 to 2034-05-31`.
+3. Uma mutação por asserção do teste novo, todas reprovadas: texto do status; linha `Requested`; listagem vazia; sobrenome na listagem; sobrenome, e-mail e token na mensagem.
+4. Token no erro: requisição a uma porta fechada com cookie falso → `Cookie: token=FAKE-SENTINEL-VALUE` no call log. Por isso a captura descarta o erro.
+5. `--repeat-each=3` em bookings e rooms: 48 de 48.
+
+**Achados:**
+
+- A asserção das datas passava pela linha da listagem mesmo com a linha `Requested` errada; as duas viraram uma, antes das mutações.
+- `gh run view --log-failed` e a lista de runs falhos não veem tentativas que terminaram verdes. Para flaky, percorrer `actions/runs/{id}/attempts/{n}/jobs`.
+- A #43 cobre o cookie no call log, fora do escopo daqui: vale para toda requisição autenticada que falhe por rede.
+- **Para a #29:** dois dos três casos passaram no retry dentro do mesmo job. É o argumento concreto para a política.
+
+**Próxima missão:** #43 (segurança, desbloqueada, vem antes pela ordem de prioridade), depois #29.
