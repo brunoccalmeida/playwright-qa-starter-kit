@@ -34,7 +34,9 @@ function anchor(heading: string): string {
  * `@known-issue` tag, so the report can be filtered to these tests.
  */
 export function knownIssue(id: KnownIssueId): TestDetails {
-  const heading = `${id}: ${knownIssueTitles[id]}`;
+  // join, not a template literal: while the map is empty (a project with no
+  // known issues yet) the key type is `never`, which the lint rule rejects
+  const heading = [id, knownIssueTitles[id]].join(': ');
   return {
     tag: '@known-issue',
     annotation: [
