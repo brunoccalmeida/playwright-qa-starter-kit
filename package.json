@@ -14,13 +14,14 @@
     "lint": "eslint --max-warnings=0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps && npm run check:known-issues && npm run check:playwright-image",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps && npm run check:known-issues && npm run check:playwright-image && npm run check:report-redaction",
     "test": "playwright test",
     "test:api": "playwright test --project=api",
     "test:e2e": "playwright test --project=chromium --project=firefox",
     "check:deps": "node scripts/check-dependency-ignores.ts",
     "check:known-issues": "node scripts/check-known-issues.ts",
-    "check:playwright-image": "node scripts/check-playwright-image.ts"
+    "check:playwright-image": "node scripts/check-playwright-image.ts",
+    "check:report-redaction": "node scripts/check-report-redaction.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -29,6 +30,7 @@
     "@types/semver": "7.8.0",
     "eslint": "10.14.0",
     "eslint-plugin-playwright": "2.12.2",
+    "fflate": "0.8.3",
     "prettier": "3.9.10",
     "semver": "7.8.6",
     "typescript": "6.0.3",
