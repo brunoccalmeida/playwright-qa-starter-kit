@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { stripVTControlCharacters } from 'node:util';
 import type {
   Reporter,
@@ -81,15 +81,29 @@ function cleanAttachment({ path, contentType }: Attachment): void {
   }
 }
 
+function removeFile(path: string | undefined): void {
+  if (path === undefined) {
+    return;
+  }
+  try {
+    rmSync(path, { force: true });
+  } catch {
+    // A directory, which the blob does not zip, or a file that cannot be removed
+  }
+}
+
 /** Removes header values from the errors and the text attachments of a result. */
 export function redactResult(result: Pick<TestResult, 'errors' | 'attachments'>): void {
   result.errors.forEach(redactError);
-  for (const attachment of [...result.attachments]) {
+  for (const attachment of result.attachments) {
     try {
       cleanAttachment(attachment);
     } catch {
-      // Fail closed: what could not be cleaned is not published
-      result.attachments.splice(result.attachments.indexOf(attachment), 1);
+      // Fail closed: what could not be cleaned is not published. The blob
+      // reporter has already recorded the path and zips whatever file is there
+      // at the end of the run, so the file goes, not the list entry (removing
+      // the entry would also shift the attachment indexes the blob keeps).
+      removeFile(attachment.path);
     }
   }
 }

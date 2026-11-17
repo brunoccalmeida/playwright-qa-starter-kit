@@ -8,7 +8,17 @@
 // It runs two failing requests against a local server, through the reporters
 // of the real config in CI mode, and searches everything they wrote.
 import { execFile } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  accessSync,
+  chmodSync,
+  constants,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -94,12 +104,33 @@ const expectedLines = [
 ];
 
 // Fail closed: an attachment that cannot be cleaned does not get published.
-// A directory makes the read throw on every platform.
-const unreadable = {
+// The blob reporter records the path of an attachment when a step ends and zips
+// whatever is on disk at the end of the run, so what counts is the file, not the
+// attachment list. A read-only file makes the write throw, except for root,
+// which ignores the mode: then the probe cannot run and says so.
+const unwritablePath = join(workspace, 'unwritable.md');
+writeFileSync(unwritablePath, `  - → GET http://host/\n    - cookie: token=${token}\n`);
+chmodSync(unwritablePath, 0o444);
+const unwritableProbeRuns = (() => {
+  try {
+    accessSync(unwritablePath, constants.W_OK);
+    return false;
+  } catch {
+    return true;
+  }
+})();
+redactResult({
   errors: [],
-  attachments: [{ name: 'unreadable', contentType: 'text/plain', path: workspace }],
-};
-redactResult(unreadable);
+  attachments: [{ name: 'unwritable', contentType: 'text/markdown', path: unwritablePath }],
+});
+const unwritableKeptToken =
+  existsSync(unwritablePath) && readFileSync(unwritablePath).includes(token);
+
+// A directory makes the read throw on every platform; the cleanup must not throw
+redactResult({
+  errors: [],
+  attachments: [{ name: 'unreadable', contentType: 'text/plain', path: outputDir }],
+});
 
 // Errors outside any test (global setup, for example) arrive through onError,
 // which a failing test cannot exercise
@@ -116,9 +147,12 @@ const problems = [
   ...expectedLines
     .filter((line) => !line.test(run.output))
     .map((line) => `Missing from the call log: ${line.source}`),
-  ...(unreadable.attachments.length === 0
+  ...(unwritableProbeRuns
     ? []
-    : ['An attachment that could not be cleaned was kept.']),
+    : ['Could not make a file read-only (running as root?): the fail-closed probe did not run.']),
+  ...(unwritableKeptToken
+    ? ['An attachment that could not be cleaned stayed on disk, where the blob reporter zips it.']
+    : []),
 ];
 
 rmSync(workspace, { recursive: true, force: true });
