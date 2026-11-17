@@ -240,35 +240,35 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
-  # npm audit queries the GitHub Advisory Database, the same source as the
-  # Dependabot alerts enabled on this repository. Those alerts watch main
-  # daily but block nothing; this job blocks a PR that adds or keeps a known
-  # vulnerability. It also runs in the nightly run (the whole workflow does),
-  # which only repeats what the alerts already report between PRs.
+  # OSV-Scanner checks package-lock.json against the OSV database, which
+  # includes the GitHub Advisory Database behind the Dependabot alerts enabled
+  # on this repository. Those alerts watch main daily but block nothing; this
+  # job blocks a PR that adds or keeps a known vulnerability, dev dependencies
+  # included (they are what this kit runs). It also runs in the nightly run
+  # (the whole workflow does). The official reusable workflow, not the scanner
+  # action: Google does not support the action on its own. The reporter step
+  # fails the job, not the scanner exit code.
   #
-  # Policy: any known vulnerability fails the job (the default audit-level).
-  # To fix a transitive one, pin the patched version in "overrides"; never
-  # `npm audit fix --force` (it can downgrade a major) nor continue-on-error.
+  # No SARIF upload: the Dependabot alerts already list these advisories under
+  # Security, and on a PR from a fork the read-only token would fail the
+  # upload. The called job still declares security-events: write, and a
+  # called workflow cannot get more than the caller grants, so it stays here.
+  # A job that calls a workflow takes no timeout-minutes.
+  #
+  # Policy: any known vulnerability fails the job. When a patched version
+  # exists, pin it in "overrides"; never `npm audit fix --force` (it can
+  # downgrade a major) nor continue-on-error. Only when no fix is published,
+  # a time-boxed exception in osv-scanner.toml (rules in that file).
   audit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # No cache and no install: npm audit reads package-lock.json, so it
-      # audits exactly what `npm ci` would install, dev dependencies included
-      # (they are what this kit runs).
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
-
-      - name: Audit dependencies
-        run: npm audit
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+    with:
+      upload-sarif: false
+      scan-args: |-
+        --lockfile=package-lock.json
 
   # Secret scanning with gitleaks over the history of the tested commit (on a
   # PR, the merge commit: what main would become). A key pushed to a public
