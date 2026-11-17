@@ -1,0 +1,15 @@
+# Vulnerability exceptions for the `audit` job (OSV-Scanner).
+#
+# Policy: a known vulnerability fails the job. When a patched version exists,
+# pin it in package.json "overrides". Only when no fix is published, and only
+# if the vulnerable code is not exploitable here, add an exception below with:
+# - a reason that says why it is not exploitable in this repository;
+# - an effectiveUntil at most 30 days ahead (when it expires the job fails
+#   again and forces a new decision);
+# - a tracking issue, closed when the exception is removed.
+# https://google.github.io/osv-scanner/configuration/
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+effectiveUntil = 2026-11-16
+reason = "picomatch <= 4.0.7 ReDoS, no patched version published. Reached only through the lint toolchain (typescript-eslint > typescript-estree > tinyglobby), whose glob patterns come from this repository's ESLint config, never from external input. Tracking: #47"
