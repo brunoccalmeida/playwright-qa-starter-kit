@@ -80,7 +80,7 @@ Dois jobs protegem o próprio repositório:
 
 As duas ferramentas estão fixadas em versões exatas no workflow, que o Dependabot não atualiza: suba-as à mão.
 
-**Travas do agente de IA:** as regras para agentes de código de IA ficam em [.github/copilot-instructions.md](.github/copilot-instructions.md), compartilhadas entre Claude Code e GitHub Copilot. O [.claude/settings.json](.claude/settings.json) nega ao agente merge com `--admin`, force push, push na `main` e leitura ou edição do `.env`. Essas regras casam o texto do comando, então são uma rede de proteção e não uma fronteira de segurança: a fronteira é o ruleset da `main`, que não tem bypass e vale para todos.
+**Travas do agente de IA:** as regras para agentes de código de IA ficam em [.github/copilot-instructions.md](.github/copilot-instructions.md), compartilhadas entre Claude Code e GitHub Copilot. O [.claude/settings.json](.claude/settings.json) nega ao agente merge com `--admin`, force push, push na `main` e leitura ou edição do `.env`, e ativa o [plugin `mission`](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), que fecha cada missão com uma Definition of Done, um revisor independente e auto-merge nativo. Essas regras casam o texto do comando, então são uma rede de proteção e não uma fronteira de segurança: a fronteira é o ruleset da `main`, que não tem bypass e vale para todos.
 
 ## Licença
 
