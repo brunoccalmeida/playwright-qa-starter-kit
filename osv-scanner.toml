@@ -11,5 +11,5 @@
 
 [[IgnoredVulns]]
 id = "GHSA-fc5q-39xc-vjpf"
-effectiveUntil = 2026-11-16
+effectiveUntil = 2026-12-17
 reason = "picomatch <= 4.0.7 ReDoS, no patched version published. Reached only through the lint toolchain (typescript-eslint > typescript-estree > tinyglobby), whose glob patterns come from this repository's ESLint config, never from external input. Tracking: #47"

@@ -719,6 +719,7 @@ O PR #23 foi integrado, mas o relatório publicado mostrou defeitos da própria 
 1. Sem exceção: `osv-scanner scan --lockfile=package-lock.json` → código 1, `GHSA-fc5q-39xc-vjpf` em `picomatch (dev)`.
 2. Com exceção: código 0, "filtered out because: <motivo>".
 3. Exceção vencida (`effectiveUntil` de ontem): código 1 de novo, com "unused ignores".
+4. No CI, pelo workflow reutilizável (o reporter é quem reprova): commit-sonda com `effectiveUntil` de ontem no próprio `osv-scanner.toml` → run 44198624750, `Loaded filter from: /github/workspace/osv-scanner.toml`, "unused ignores", `GHSA-fc5q-39xc-vjpf`, `audit / osv-scan` e `ci-passed` vermelhos. Data real no commit seguinte: verde (o arquivo é lido e a exceção aplicada).
 
 **Achado:** o `npm audit` contava 9 vulnerabilidades (cada dependente); o OSV-Scanner conta 1 pacote afetado, a raiz.
 
