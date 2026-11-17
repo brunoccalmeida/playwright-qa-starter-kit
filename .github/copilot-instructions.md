@@ -34,7 +34,19 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 2. Listar issues e PRs abertos (`gh issue list`, `gh pr list`).
 3. Propor a missão de maior prioridade e confirmar com o usuário. Prioridade: bloqueio → segurança → visibilidade → dívida técnica (labels `priority: P0/P1/P2`).
 
-**Fechamento** (automático): skill `/close-mission`, a Definition of Done; o registro de sessão vai no PR da própria missão.
+**Fechamento** (automático): skill `/mission:close-mission` (plugin `mission`), a Definition of Done; o registro da missão vai no corpo do PR, e o resumo de sessão guarda só o estado e a próxima missão.
+
+**Contratos** do plugin `mission` ([formato](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md)); a primeira coluna é o nome que as skills procuram:
+
+| Contrato          | Valor                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `check`           | `npm run check`                                                                                                  |
+| `test`            | `npm test` (API + E2E, a suíte do CI); antes: `cp .env.example .env` e `npx playwright install chromium firefox` |
+| `main-branch`     | `main`                                                                                                           |
+| `gate`            | `ci-passed`                                                                                                      |
+| `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md`                                                                                |
+
+Revisões específicas do projeto ficam em [REVIEW.md](../REVIEW.md).
 
 ## Gasto de tokens (contexto)
 
@@ -98,8 +110,8 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 - **Conventional Commits** (`feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `build`, `ci`, `chore`; escopo opcional), commits atômicos.
 - Antes de commitar: `npm run check` verde.
 - **Um PR aberto por vez**; trabalho pronto espera em commit local até a fila esvaziar.
-- **Antes de abrir o PR da missão**, o subagente `reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue; corrija os achados que procedem e registre os descartados com o porquê.
-- **Merge só pelo usuário** (skill `/ship-pr`, que liga o auto-merge). Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
+- **Antes de abrir o PR da missão**, o subagente `mission:reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue; corrija os achados que procedem e registre os descartados com o porquê.
+- **Merge só pelo usuário** (skill `/mission:ship-pr`, que liga o auto-merge). Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
 
 ## Princípios
 
