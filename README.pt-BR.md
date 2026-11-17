@@ -17,7 +17,7 @@ O app alvo é o [Restful Booker Platform](https://automationintesting.online), u
 
 - **Testes:** 29 de API · 9 E2E, cada E2E no Chromium e no Firefox, contra um ambiente real compartilhado com outros testers
 - **Defeitos encontrados e acompanhados:** 6 no app testado, [documentados](docs/KNOWN_ISSUES.md) e cada um afirmado por um teste que avisa quando o defeito é corrigido
-- **Portões de qualidade:** a `main` só aceita pull request que passe em checagem estrita de tipos, lint, testes, `npm audit`, varredura de segredos (gitleaks) e auditoria dos workflows (zizmor)
+- **Portões de qualidade:** a `main` só aceita pull request que passe em checagem estrita de tipos, lint, testes, auditoria de dependências (OSV-Scanner), varredura de segredos (gitleaks) e auditoria dos workflows (zizmor)
 - **Relatório ao vivo:** HTML, republicado a cada merge e toda noite: 📊 **[Ver o relatório de testes mais recente](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reaproveitável:** um [guia passo a passo](docs/ADAPTING.md) (em inglês) leva o kit para o app de um novo cliente
 - **Feito com IA, sob os mesmos portões:** construído com um agente de código de IA que não tem atalho para furar o CI, seguindo [regras escritas do projeto](.github/copilot-instructions.md): todo teste foi visto falhando antes de valer
@@ -71,7 +71,7 @@ O Dependabot abre atualizações semanais agrupadas de npm e GitHub Actions ([co
 
 O job `e2e` roda na imagem oficial de container do Playwright, que traz os navegadores e as bibliotecas do sistema, então nenhuma execução depende de um espelho `apt`. A tag da imagem precisa acompanhar o `@playwright/test`, e o Dependabot não a atualiza: [outra sentinela](scripts/check-playwright-image.ts) reprova o `npm run check` no pull request do Dependabot que sobe o Playwright, até a tag e o digest do workflow serem atualizados nesse mesmo pull request (o comentário do job `e2e` mostra como obter o digest).
 
-O job `audit` roda `npm audit` e reprova qualquer vulnerabilidade conhecida, então um pull request não consegue adicionar nem manter uma. Ele lê a mesma base de advisories dos alertas do Dependabot, que vigiam a `main` entre os pull requests. Corrija uma dependência transitiva vulnerável fixando a versão corrigida em `overrides` no `package.json`.
+O job `audit` roda o [OSV-Scanner](https://google.github.io/osv-scanner/) no `package-lock.json` e reprova qualquer vulnerabilidade conhecida, então um pull request não consegue adicionar nem manter uma. A base OSV inclui os advisories dos alertas do Dependabot, que vigiam a `main` entre os pull requests. Corrija uma dependência transitiva vulnerável fixando a versão corrigida em `overrides` no `package.json`. Só quando não houver correção publicada e o código não for explorável aqui, acrescente uma exceção com prazo ao [`osv-scanner.toml`](osv-scanner.toml) (motivo, no máximo 30 dias, issue de acompanhamento); quando ela expira, o job volta a reprovar.
 
 Dois jobs protegem o próprio repositório:
 

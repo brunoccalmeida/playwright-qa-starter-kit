@@ -15,7 +15,7 @@ The target application is the [Restful Booker Platform](https://automationintest
 
 - **Tests:** 29 API · 9 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
 - **Defects found and tracked:** 6 in the application under test, [documented](docs/KNOWN_ISSUES.md) and each asserted by a test that signals when the defect is fixed
-- **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, `npm audit`, secret scanning (gitleaks) and a workflow audit (zizmor)
+- **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, a dependency audit (OSV-Scanner), secret scanning (gitleaks) and a workflow audit (zizmor)
 - **Live report:** HTML, republished on every merge and every night: 📊 **[View the latest test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reusable:** a [step-by-step guide](docs/ADAPTING.md) takes the kit to a new client application
 - **AI-assisted, same gates:** built with an AI coding agent that gets no shortcut past CI, under [written project rules](.github/copilot-instructions.md): every test was seen failing before it counted
@@ -69,7 +69,7 @@ Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.gi
 
 The `e2e` job runs in the official Playwright container image, which ships the browsers and their system libraries, so no run depends on an `apt` mirror. The image tag must match `@playwright/test`, and Dependabot does not bump it: [another sentinel](scripts/check-playwright-image.ts) fails `npm run check` in the Dependabot pull request that bumps Playwright, until the tag and digest in the workflow are updated in that same pull request (the `e2e` job's comment shows how to get the digest).
 
-The `audit` job runs `npm audit` and fails on any known vulnerability, so a pull request cannot add or keep one. It reads the same advisory database as Dependabot alerts, which watch `main` between pull requests. Fix a vulnerable transitive dependency by pinning the patched version in `overrides` in `package.json`.
+The `audit` job runs [OSV-Scanner](https://google.github.io/osv-scanner/) on `package-lock.json` and fails on any known vulnerability, so a pull request cannot add or keep one. The OSV database includes the advisories behind Dependabot alerts, which watch `main` between pull requests. Fix a vulnerable transitive dependency by pinning the patched version in `overrides` in `package.json`. Only when no fix is published and the code is not exploitable here, add a time-boxed exception to [`osv-scanner.toml`](osv-scanner.toml) (a reason, at most 30 days, a tracking issue); when it expires the job fails again.
 
 Two jobs guard the repository itself:
 
