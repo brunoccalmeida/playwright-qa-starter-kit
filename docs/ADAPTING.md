@@ -60,17 +60,18 @@ grep -rnE 'automationintesting|brunoccalmeida|Restful Booker' . \
   --exclude-dir={node_modules,.git,playwright,playwright-report,test-results,blob-report}
 ```
 
-| File                              | What to change                                                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `.env.example`                    | The URL and the comment. It holds public demo credentials: never put a client's real ones here.                     |
-| `.github/workflows/ci.yml`        | `PLAYWRIGHT_HTML_TITLE` in the `report` job (`BASE_URL` was set in step 2).                                         |
-| `tests/known-issues.ts`           | The `KNOWN_ISSUES` URL: the report's links to each defect would otherwise open this kit's list.                     |
-| `docs/KNOWN_ISSUES.md`            | The introduction and the report link. The entries go in step 4.                                                     |
-| `README.md`, `README.pt-BR.md`    | Rewrite them for the client: badges, target application and report links.                                           |
-| `.github/copilot-instructions.md` | "O que é este projeto": the rules the AI agents load in every chat.                                                 |
-| `docs/PROJECT_SESSION_SUMMARY.md` | Replace it with an empty summary: it is the history of this kit, not of the client's project.                       |
-| `docs/ADAPTING.md`                | Delete it once the adaptation is done: the client's project has no use for it.                                      |
-| `package.json`                    | `name`, `description` and `author`; then run `npm install --package-lock-only` so the lockfile keeps the same name. |
+| File                              | What to change                                                                                                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.env.example`                    | The URL and the comment. It holds public demo credentials: never put a client's real ones here.                                                                                      |
+| `.github/workflows/ci.yml`        | `PLAYWRIGHT_HTML_TITLE` in the `report` job (`BASE_URL` was set in step 2).                                                                                                          |
+| `tests/known-issues.ts`           | The `KNOWN_ISSUES` URL: the report's links to each defect would otherwise open this kit's list.                                                                                      |
+| `docs/KNOWN_ISSUES.md`            | The introduction and the report link. The entries go in step 4.                                                                                                                      |
+| `README.md`, `README.pt-BR.md`    | Rewrite them for the client: badges, target application and report links.                                                                                                            |
+| `.github/copilot-instructions.md` | "O que é este projeto": the rules the AI agents load in every chat.                                                                                                                  |
+| `.claude/settings.json`           | The `mission` plugin marketplace. Keep it to close missions with `/mission:close-mission`, or remove `extraKnownMarketplaces`, `enabledPlugins` and the contract table in the rules. |
+| `docs/PROJECT_SESSION_SUMMARY.md` | Replace it with an empty summary: it is the history of this kit, not of the client's project.                                                                                        |
+| `docs/ADAPTING.md`                | Delete it once the adaptation is done: the client's project has no use for it.                                                                                                       |
+| `package.json`                    | `name`, `description` and `author`; then run `npm install --package-lock-only` so the lockfile keeps the same name.                                                                  |
 
 Keep the [LICENSE](../LICENSE): the MIT license requires its notice to stay in copies of the kit.
 

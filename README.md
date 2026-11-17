@@ -78,7 +78,7 @@ Two jobs guard the repository itself:
 
 Both tools are pinned to exact versions in the workflow, which Dependabot does not update: bump them by hand.
 
-**AI agent guardrails:** the rules for AI coding agents live in [.github/copilot-instructions.md](.github/copilot-instructions.md), shared by Claude Code and GitHub Copilot. [.claude/settings.json](.claude/settings.json) denies the agent admin merges, force pushes, pushes to `main` and reading or editing `.env`. Those rules match the text of a command, so they are a safety net and not a security boundary: the boundary is the ruleset on `main`, which has no bypass and applies to everyone.
+**AI agent guardrails:** the rules for AI coding agents live in [.github/copilot-instructions.md](.github/copilot-instructions.md), shared by Claude Code and GitHub Copilot. [.claude/settings.json](.claude/settings.json) denies the agent admin merges, force pushes, pushes to `main` and reading or editing `.env`, and enables the [`mission` plugin](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), which closes each mission with a Definition of Done, an independent reviewer and native auto-merge. Those rules match the text of a command, so they are a safety net and not a security boundary: the boundary is the ruleset on `main`, which has no bypass and applies to everyone.
 
 ## License
 
