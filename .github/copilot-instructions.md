@@ -20,7 +20,7 @@ Registre no commit como o RED foi visto (comando e erro). Portões de qualidade 
 ## Melhores práticas sempre
 
 - Havendo mais de um caminho, recomende o indicado pelas melhores práticas e cite o princípio que o sustenta (ex.: YAGNI, fail fast, test isolation).
-- Antes de perguntar uma decisão ao usuário, **consulte** a documentação oficial (playwright.dev, typescriptlang.org, docs do GitHub), sem citar de memória; a pergunta traz as fontes e a recomendação.
+- Em qualquer situação de dúvida, antes de sugerir o que fazer ou perguntar uma decisão ao usuário, **consulte as melhores práticas mais modernas**, a começar pela documentação oficial na versão usada no projeto (playwright.dev, typescriptlang.org, docs do GitHub), sem citar de memória; a sugestão traz as fontes, a recomendação e o que é julgamento próprio.
 - Sem atalhos por conveniência (ex.: `test.skip` para silenciar falha, `// eslint-disable` sem motivo, `any`). Desvios só com justificativa explícita no commit ou na documentação.
 - Regra deste arquivo que não siga as melhores práticas deve ser substituída, não contornada.
 
