@@ -89,6 +89,8 @@ Nunca "chute" soluções. Antes de propor uma correção:
 5. **Corrija** de forma consistente com a arquitetura, em todos os locais afetados.
 6. **Valide:** sem regressão; rode o teste repetidas vezes (`--repeat-each`) se a falha era intermitente.
 
+**Flaky** (falhou e passou no mesmo commit; no CI o run fica vermelho): siga [docs/FLAKY_TESTS.md](../docs/FLAKY_TESTS.md). Em teste que o PR criou ou alterou, corrija no próprio PR; nos demais, abra a issue antes do re-run e trate em missão própria.
+
 Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **solução proposta** com justificativa e **prevenção**.
 
 ## Comunicação

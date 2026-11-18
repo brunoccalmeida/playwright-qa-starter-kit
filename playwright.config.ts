@@ -16,10 +16,12 @@ export default defineConfig({
   fullyParallel: true,
   // A test.only committed by mistake would silently skip the rest of the suite
   forbidOnly: env.CI,
-  // The target app is a shared public environment: retry transient network
-  // failures in CI. Playwright still reports a test that passed on retry as
-  // "flaky", so instability stays visible instead of hidden.
+  // Retries diagnose, they do not pass a build (docs/FLAKY_TESTS.md): a test
+  // that fails and then passes on the same commit is proven flaky in one run,
+  // and failOnFlakyTests turns that run red so the flake gets an issue.
+  // scripts/check-flaky-policy.ts holds this.
   retries: env.CI ? 2 : 0,
+  failOnFlakyTests: env.CI,
   // In CI each job also writes a blob report; the report job merges them
   // into the HTML report published on GitHub Pages (playwright.dev/docs/test-sharding).
   // The redacting reporter comes first, to clean what the others receive.
