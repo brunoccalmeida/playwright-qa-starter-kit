@@ -63,6 +63,8 @@ Every pull request runs the [CI workflow](.github/workflows/ci.yml). `main` is p
 
 **Test report:** the `api` and `e2e` jobs each write a blob report, and the `report` job merges them into one HTML report (also on pull requests, as the `github-pages` artifact). The `deploy` job publishes the report of `main` on [GitHub Pages](https://brunoccalmeida.github.io/playwright-qa-starter-kit/): after each merge and after the nightly run against the live app (06:23 UTC). Failing runs are published too: they are the report most worth reading. Traces stay off in CI because they would store the credentials; a failed test keeps a screenshot.
 
+**Flaky tests:** CI retries a failed test twice, only to prove on the same commit that it is flaky: a test that passes only on a retry still fails the run (`failOnFlakyTests`, held by [a sentinel](scripts/check-flaky-policy.ts) in `npm run check`). Each flake gets an issue and its own fix; [docs/FLAKY_TESTS.md](docs/FLAKY_TESTS.md) is the policy, from recording to quarantine.
+
 The `api` and `e2e` jobs read the admin credentials from the repository secrets `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Set them both as **Actions** and as **Dependabot** secrets: workflows triggered by Dependabot can only read Dependabot secrets.
 
 Dependabot opens weekly grouped updates for npm and GitHub Actions ([config](.github/dependabot.yml)). TypeScript majors are ignored while `typescript-eslint` rejects them as a peer dependency; [a sentinel](scripts/check-dependency-ignores.ts) in `npm run check` fails as soon as that is no longer true, so the ignore rule never outlives its reason.
