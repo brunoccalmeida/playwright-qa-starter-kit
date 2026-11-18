@@ -36,7 +36,7 @@ Do not guess at a cause the evidence cannot show. Failures already leave evidenc
 
 If that evidence cannot tell the hypotheses apart, add the evidence first, test-first, and let the next failure answer. That includes failure messages: one message for two different causes is a bug in the instrumentation.
 
-To look for earlier occurrences: `gh run view --log-failed` and the list of failed runs show only attempts that ended red. Before this policy, a flake that passed on retry ended green; [`actions/runs/{run_id}/attempts/{attempt_number}/jobs`](https://docs.github.com/en/rest/actions/workflow-jobs) reaches every attempt.
+To look for earlier occurrences, search the logs of green jobs too: `gh run view --log-failed` and the list of failed runs show only what ended red, and before this policy a flake that passed on a Playwright retry left its job green. The `list` reporter prints `N flaky` in the job log, read with `gh api repos/{owner}/{repo}/actions/jobs/{job_id}/logs`. To find the jobs of a run, including those of each manual re-run, use [`actions/runs/{run_id}/jobs?filter=all`](https://docs.github.com/en/rest/actions/workflow-jobs).
 
 ## 3. Retries diagnose, they never pass a build
 
