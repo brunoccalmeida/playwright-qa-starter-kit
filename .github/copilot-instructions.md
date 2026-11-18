@@ -112,7 +112,6 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 - **Um PR aberto por vez**; trabalho pronto espera em commit local até a fila esvaziar.
 - **Antes de abrir o PR da missão**, o subagente `mission:reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue; corrija os achados que procedem e registre os descartados com o porquê.
 - **Merge só pelo usuário** (skill `/mission:ship-pr`, que liga o auto-merge). Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
-- **PR em conflito (`DIRTY`):** faça merge da `main` na branch e um push normal; rebase pede force push, que as travas negam. O `/mission:ship-pr` ainda não orienta isso ([automation-template#19](https://github.com/brunoccalmeida/automation-template/issues/19)).
 
 ## Princípios
 
