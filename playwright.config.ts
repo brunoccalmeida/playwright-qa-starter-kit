@@ -16,7 +16,7 @@ export default defineConfig({
   fullyParallel: true,
   // A test.only committed by mistake would silently skip the rest of the suite
   forbidOnly: env.CI,
-  // Retries diagnose, they do not pass a build (docs/FLAKY_TESTS.md): a test
+  // Retries diagnose, they do not pass a build (docs/FLAKY_TESTS_PLAYWRIGHT.md): a test
   // that fails and then passes on the same commit is proven flaky in one run,
   // and failOnFlakyTests turns that run red so the flake gets an issue.
   // scripts/check-flaky-policy.ts holds this.

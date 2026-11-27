@@ -1,1 +1,20 @@
 package-lock.json
+
+# Owned by automation-template and updated by copier update (.copier-answers.yml):
+# left exactly as the template wrote them, so an update applies its changes
+# without conflicts. Each path is listed, instead of the template's whole
+# .claude/, .github/ and docs/, so that the files this kit owns there are still
+# formatted. A file the template adds in a new version goes here too.
+.copier-answers.yml
+.claude/rules/agent-rules.md
+.claude/rules/core.md
+.claude/settings.json
+.claude/skills/
+.github/ISSUE_TEMPLATE/1-mission.yml
+.github/pull_request_template.md
+.github/rulesets/
+.github/workflows/core-checks.yml
+docs/FLAKY_TESTS.md
+docs/adr/template.md
+docs/ai-workflow/
+docs/spikes/template.md

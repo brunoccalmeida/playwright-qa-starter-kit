@@ -42,6 +42,7 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `check`           | `npm run check`                                                                                                  |
 | `test`            | `npm test` (API + E2E, a suíte do CI); antes: `cp .env.example .env` e `npx playwright install chromium firefox` |
+| `smoke`           | `npm run smoke` (os testes `@smoke`: o app alvo responde, na API e no navegador)                                 |
 | `main-branch`     | `main`                                                                                                           |
 | `gate`            | `ci-passed`                                                                                                      |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md`                                                                                |
@@ -103,7 +104,7 @@ Ao reportar um erro: **erro observado**, **causa raiz**, **análise**, **soluç�
 
 - npm com `package-lock.json` commitado; versões fixadas exatas (`--save-exact`). Node fixado em `.node-version`.
 - Nunca commitar credenciais; `.env` fica fora do Git.
-- Travas do agente em `.claude/settings.json` (`permissions.deny`): merge `--admin`, force push, push na `main` e leitura/escrita do `.env`. Regra nova vale para `Bash(...)` **e** `PowerShell(...)` e só entra provada por sonda. Elas casam o texto do comando, não são fronteira de segurança (`git push` sem argumentos na `main`, `git -C` e `bash -c` escapam): a fronteira é o ruleset da `main` no GitHub.
+- Travas do agente em `.claude/settings.json`, que vem do template (`permissions.deny`): merge `--admin`, force push e leitura do `.env` (deny de `Read` também barra Edit e Write). Push na `main` fica com o ruleset do GitHub, e não com uma trava local: o template a removeu de propósito ([ADR 0010](https://github.com/brunoccalmeida/automation-template/blob/v1.0.0/docs/adr/0010-claude-code-enforcement-in-the-core.md)). Trava nova vai para o template; vale para `Bash(...)` **e** `PowerShell(...)` e só entra provada por sonda. Elas casam o texto do comando, não são fronteira de segurança (`git -C` e `bash -c` escapam): a fronteira é o ruleset da `main` no GitHub.
 - Vulnerabilidade em dependência transitiva: `overrides` para a versão corrigida, nunca `npm audit fix --force` que rebaixa versão maior. Sem correção publicada: exceção com prazo no `osv-scanner.toml`, com as regras do próprio arquivo.
 - Versão maior é decisão humana: ler as notas de versão e medir o impacto antes de atualizar. Conferir _peer dependencies_ (ex.: `typescript-eslint` limita a versão do TypeScript).
 

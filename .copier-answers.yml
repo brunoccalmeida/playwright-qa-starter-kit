@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.0.0
+_src_path: gh:brunoccalmeida/automation-template
+cmd_check: npm run check
+cmd_smoke: npm run smoke
+cmd_test: npm test
+gate: ci-passed
+main_branch: main
+pack: ts-playwright
+project_name: Playwright QA Starter Kit
+test_types:
+- e2e
+- api

@@ -60,19 +60,19 @@ grep -rnE 'automationintesting|brunoccalmeida|Restful Booker' . \
   --exclude-dir={node_modules,.git,playwright,playwright-report,test-results,blob-report}
 ```
 
-| File                              | What to change                                                                                                                                                                       |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.env.example`                    | The URL and the comment. It holds public demo credentials: never put a client's real ones here.                                                                                      |
-| `.github/workflows/ci.yml`        | `PLAYWRIGHT_HTML_TITLE` in the `report` job (`BASE_URL` was set in step 2).                                                                                                          |
-| `tests/known-issues.ts`           | The `KNOWN_ISSUES` URL: the report's links to each defect would otherwise open this kit's list.                                                                                      |
-| `docs/KNOWN_ISSUES.md`            | The introduction and the report link. The entries go in step 4.                                                                                                                      |
-| `docs/FLAKY_TESTS.md`             | The report link in section 2. The worked example (#25) links to this kit on purpose: keep it as an example of the method.                                                            |
-| `README.md`, `README.pt-BR.md`    | Rewrite them for the client: badges, target application and report links.                                                                                                            |
-| `.github/copilot-instructions.md` | "O que é este projeto": the rules the AI agents load in every chat.                                                                                                                  |
-| `.claude/settings.json`           | The `mission` plugin marketplace. Keep it to close missions with `/mission:close-mission`, or remove `extraKnownMarketplaces`, `enabledPlugins` and the contract table in the rules. |
-| `docs/PROJECT_SESSION_SUMMARY.md` | Replace it with an empty summary: it is the history of this kit, not of the client's project.                                                                                        |
-| `docs/ADAPTING.md`                | Delete it once the adaptation is done: the client's project has no use for it.                                                                                                       |
-| `package.json`                    | `name`, `description` and `author`; then run `npm install --package-lock-only` so the lockfile keeps the same name.                                                                  |
+| File                              | What to change                                                                                                                                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.env.example`                    | The URL and the comment. It holds public demo credentials: never put a client's real ones here.                                                                                                                                   |
+| `.github/workflows/ci.yml`        | `PLAYWRIGHT_HTML_TITLE` in the `report` job (`BASE_URL` was set in step 2).                                                                                                                                                       |
+| `tests/known-issues.ts`           | The `KNOWN_ISSUES` URL: the report's links to each defect would otherwise open this kit's list.                                                                                                                                   |
+| `docs/KNOWN_ISSUES.md`            | The introduction and the report link. The entries go in step 4.                                                                                                                                                                   |
+| `docs/FLAKY_TESTS_PLAYWRIGHT.md`  | The report link in the evidence table. The worked example (#25) links to this kit on purpose: keep it as an example of the method.                                                                                                |
+| `README.md`, `README.pt-BR.md`    | Rewrite them for the client: badges, target application and report links.                                                                                                                                                         |
+| `.github/copilot-instructions.md` | "O que é este projeto": the rules the AI agents load in every chat.                                                                                                                                                               |
+| `.copier-answers.yml`             | Nothing by hand. It records the template version; `copier update` moves it. The template's files (listed in `.prettierignore`) are not edited either: a change goes to the template, or `copier update` turns it into a conflict. |
+| `docs/PROJECT_SESSION_SUMMARY.md` | Replace it with an empty summary: it is the history of this kit, not of the client's project.                                                                                                                                     |
+| `docs/ADAPTING.md`                | Delete it once the adaptation is done: the client's project has no use for it.                                                                                                                                                    |
+| `package.json`                    | `name`, `description` and `author`; then run `npm install --package-lock-only` so the lockfile keeps the same name.                                                                                                               |
 
 Keep the [LICENSE](../LICENSE): the MIT license requires its notice to stay in copies of the kit.
 
@@ -93,15 +93,15 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 
 `npx tsc` now lists what still refers to the deleted files. Fix each one:
 
-| File                            | What to change                                                                                                 |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `tests/fixtures.ts`             | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                  |
-| `tests/e2e/fixtures.ts`         | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports. |
-| `src/pages/admin-rooms-page.ts` | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
-| `tests/api/auth.spec.ts`        | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
-| `tests/known-issues.ts`         | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
-| `docs/KNOWN_ISSUES.md`          | Delete every `## KI-n` entry, the `Test environment limit` section and the `Resolved issues` section.          |
-| `docs/FLAKY_TESTS.md`           | Delete the "Open case" section: it refers to `createBooking` and to the section deleted above.                 |
+| File                             | What to change                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                  |
+| `tests/e2e/fixtures.ts`          | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports. |
+| `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
+| `tests/api/auth.spec.ts`         | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
+| `tests/known-issues.ts`          | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
+| `docs/KNOWN_ISSUES.md`           | Delete every `## KI-n` entry, the `Test environment limit` section and the `Resolved issues` section.          |
+| `docs/FLAKY_TESTS_PLAYWRIGHT.md` | Delete the "Open case" section: it refers to `createBooking` and to the section deleted above.                 |
 
 These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [redacting-reporter.ts](../src/reporting/redacting-reporter.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
 
@@ -150,50 +150,7 @@ gh secret set ADMIN_USERNAME --app dependabot
 gh secret set ADMIN_PASSWORD --app dependabot
 ```
 
-**Merge settings.** Squash only, with the pull request's title and body as the commit message:
-
-```sh
-gh api --method PATCH repos/<owner>/<repo> \
-  -F allow_squash_merge=true -F allow_merge_commit=false -F allow_rebase_merge=false \
-  -F allow_auto_merge=true -F delete_branch_on_merge=true \
-  -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=PR_BODY
-```
-
-**Ruleset.** `ci-passed` is the only required check, so adding a job to the workflow never means editing the ruleset. `15368` is the ID of the GitHub Actions app. With no reviewers on the project, set `required_approving_review_count` to 0, because GitHub does not let authors approve their own pull requests; on a team, raise it.
-
-```sh
-gh api --method POST repos/<owner>/<repo>/rulesets --input - <<'EOF'
-{
-  "name": "Protect main",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "required_linear_history" },
-    {
-      "type": "pull_request",
-      "parameters": {
-        "allowed_merge_methods": ["squash"],
-        "dismiss_stale_reviews_on_push": false,
-        "require_code_owner_review": false,
-        "require_last_push_approval": false,
-        "required_approving_review_count": 0,
-        "required_review_thread_resolution": false
-      }
-    },
-    {
-      "type": "required_status_checks",
-      "parameters": {
-        "strict_required_status_checks_policy": true,
-        "required_status_checks": [{ "context": "ci-passed", "integration_id": 15368 }]
-      }
-    }
-  ]
-}
-EOF
-```
+**Labels, merge settings and ruleset.** They come from [automation-template](https://github.com/brunoccalmeida/automation-template), like the rest of the harness: open Claude Code in the new repository and run `/new-project`. It runs [`.github/scripts/apply-github-settings.sh`](../.github/scripts/apply-github-settings.sh), which creates the `priority: P0/P1/P2`, `blocked` and `reviewer-miss` labels, sets squash only with the pull request's title and body as the commit message, and applies the ruleset in [`.github/rulesets/protect-main.json`](../.github/rulesets/protect-main.json); then it reads each value back. `ci-passed` is the only required check, so adding a job to the workflow never means editing the ruleset. The ruleset asks for no approving review, because GitHub does not let authors approve their own pull requests; on a team, raise `required_approving_review_count` in the template, not here. Until it runs, `main` takes direct pushes and the gate is not required.
 
 **Security features.** In the repository's security settings, enable Dependabot alerts and security updates and, where the plan includes them, secret scanning and push protection.
 
@@ -226,4 +183,4 @@ The workflow runs against the live application at 06:23 UTC. Agree on it with th
 
 The second check matters most: a gate that has never rejected anything has not been shown to work.
 
-After that, Dependabot keeps most of the kit up to date. Three versions in the workflow are bumped by hand: the Playwright container image in the `e2e` job, which has to move together with `@playwright/test`, and the versions of gitleaks and zizmor, which nothing flags when they get old. The [README](../README.md#continuous-integration) explains how.
+After that, Dependabot keeps most of the kit up to date. One version in the workflow is bumped by hand: the Playwright container image in the `e2e` job, which has to move together with `@playwright/test`; the [README](../README.md#continuous-integration) explains how. The versions of gitleaks and zizmor live in the template's `core-checks.yml` and arrive with `copier update`.
