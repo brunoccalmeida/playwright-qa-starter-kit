@@ -1,6 +1,6 @@
 import type { APIResponse } from '@playwright/test';
 import { BookingApi, bookingListSchema, bookingSchema } from '../../src/api/booking-api.ts';
-import { createBookingOrExplain } from '../../src/api/create-booking.ts';
+import { createBookingOrExplain, SAME_GUEST } from '../../src/api/create-booking.ts';
 import { expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
@@ -60,11 +60,34 @@ test.describe('POST /ui-api/booking', () => {
     expect(failure).toContain(
       `Requested: room ${String(room.roomid)}, ${stay.checkin} to ${stay.checkout}`,
     );
+    expect(failure).toMatch(/Refused after \d+ ms/);
     expect(failure).toContain(`#${String(first.bookingid)}: ${stay.checkin} to ${stay.checkout}`);
+    expect(failure).not.toContain(SAME_GUEST);
     expect(failure).not.toContain(first.lastname);
     expect(failure).not.toContain(clash.lastname);
     expect(failure).not.toContain(clash.email);
     expect(failure).not.toContain(adminToken);
+  });
+
+  // The app can store a booking and still answer 409 (#54): this mark tells
+  // that case apart from a clash with someone else's booking
+  test('marks a booking the room already holds for the refused guest', async ({
+    createBooking,
+    room,
+  }) => {
+    const booking = newBooking(room.roomid, futureStay());
+    const first = await createBooking(booking);
+
+    const failure = await createBooking(booking).then(
+      () => 'created',
+      (error: unknown) => String(error),
+    );
+
+    const { checkin, checkout } = booking.bookingdates;
+    expect(failure).toContain(
+      `#${String(first.bookingid)}: ${checkin} to ${checkout}${SAME_GUEST}`,
+    );
+    expect(failure).not.toContain(booking.lastname);
   });
 
   test('keeps the refusal and hides the token when the room cannot be listed', async ({
