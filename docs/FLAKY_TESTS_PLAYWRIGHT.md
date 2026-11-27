@@ -54,6 +54,14 @@ No test is in quarantine today.
 5. **Fixed.** `AdminRoomsPage.goto()` registers `waitForResponse` for `GET /api/room` before navigating and returns only when the rows on screen match the rooms in that response.
 6. **Proved.** The probe went green, 3 of 3, and the E2E suite went 91 of 91 in the Playwright container, with `--repeat-each=5 --retries=0`.
 
+## Worked example: the missing login error on Firefox (#62)
+
+1. **Seen.** In one local full run, `wrong password shows an error` failed on Firefox: no alert with text within 5 s, although the trace showed the login request answered `401`. 15 + 15 isolated repetitions passed.
+2. **Hypotheses, checked against the source first.** "The layout's auth check resets the form" was refuted without a probe: a guest has no `token` cookie, so the layout never calls `/ui-api/auth/validate`, and the `Logout` button in the snapshot is rendered for everyone.
+3. **Forced, not repeated.** A probe that delayed the login response with `page.route` reproduced the exact failure at 6 s (form still filled, empty alert) and passed at 3 s. The page shows the error only after the response arrives, so the assertion's 5 s window started at the click and a slow response used it up.
+4. **Fixed.** `AdminLoginPage.login()` registers `waitForResponse` for `POST /ui-api/auth/login` before the click and returns the response; the test asserts the `401` first, so a slow or wrong response fails on the network, not on a missing alert.
+5. **Proved.** The 6 s probe passed on both browsers, and the login spec went 41 of 41 with `--repeat-each=10 --retries=0`.
+
 ## Open case: a booking refused with 409 (#42, #54)
 
 The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts (#42); on 2026-11-26, two refused bookings found the room already holding a booking with exactly the requested dates (#54). The likely cause, read in the application source and not observed yet, is the application retrying a `POST` it had stored ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` records how long the refusal took and marks the room's booking that has the same guest, so the next occurrence confirms or refutes it. It will turn the run red: copy that evidence into #54.
