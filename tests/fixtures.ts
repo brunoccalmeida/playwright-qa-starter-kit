@@ -106,7 +106,14 @@ export const test = base.extend<ApiFixtures>({
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
     const created = expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName);
     await use(created);
-    if (testInfo.status === 'passed' || testInfo.status === 'skipped') {
+    // A test that deletes its own room (e.g. the KI-7 test) is not the
+    // environment's doing; status, not expectedStatus: a test.fail() whose
+    // room vanished gets the error too, in the report only
+    if (
+      testInfo.status === 'passed' ||
+      testInfo.status === 'skipped' ||
+      roomApi.hasDeleted(created.roomid)
+    ) {
       return;
     }
     // A failed test whose room vanished: the shared environment is the

@@ -39,7 +39,23 @@ export class RoomApi {
     return this.request.get(`/ui-api/room/${String(roomid)}`);
   }
 
-  delete(roomid: number, token?: string): Promise<APIResponse> {
-    return this.request.delete(`/ui-api/room/${String(roomid)}`, { headers: authCookie(token) });
+  async delete(roomid: number, token?: string): Promise<APIResponse> {
+    const response = await this.request.delete(`/ui-api/room/${String(roomid)}`, {
+      headers: authCookie(token),
+    });
+    if (response.ok()) {
+      this.deleted.add(roomid);
+    }
+    return response;
   }
+
+  /**
+   * Whether this client deleted the room: tells a test's own delete from
+   * one by the shared environment or another user.
+   */
+  hasDeleted(roomid: number): boolean {
+    return this.deleted.has(roomid);
+  }
+
+  private readonly deleted = new Set<number>();
 }
