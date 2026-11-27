@@ -12,4 +12,4 @@ Histórico e contexto das sessões: [docs/PROJECT_SESSION_SUMMARY.md](docs/PROJE
 
 ## Exceções ao core
 
-- **"Everything written to the repository is in English"** (Engineering defaults): a conversa e a documentação interna (regras, resumo de sessão) ficam em português (Brasil); código, commits, issues, PRs, README principal e os entregáveis para o cliente, em inglês (seção "Comunicação"). Motivo: o critério é quem lê; o dono do projeto trabalha em pt-BR, e o que vai para o cliente segue o idioma do código.
+- **"Everything written to the repository is in English"** (Engineering defaults): a conversa, a documentação interna (regras, resumo de sessão) e a tradução `README.pt-BR.md` ficam em português (Brasil); código, commits, issues, PRs, README principal e os entregáveis para o cliente, em inglês (seção "Comunicação"). Motivo: o critério é quem lê; o dono do projeto trabalha em pt-BR, e o que vai para o cliente segue o idioma do código.

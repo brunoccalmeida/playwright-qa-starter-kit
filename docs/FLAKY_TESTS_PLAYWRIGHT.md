@@ -4,7 +4,7 @@ The policy is [FLAKY_TESTS.md](FLAKY_TESTS.md). It comes from [automation-templa
 
 ## Seeing it on the same commit (section 1)
 
-In CI, Playwright's retries prove it within the run: a test that fails and then passes on a retry is reported as `flaky`, and the run fails (see "Retries" below). Otherwise, a GitHub Actions re-run [uses the same `GITHUB_SHA`](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs), so it is a valid check.
+In CI, Playwright's retries prove it within the run: a test that fails and then passes on a retry is reported as `flaky`, and the run fails (see "Retries that only diagnose" below). Otherwise, a GitHub Actions re-run [uses the same `GITHUB_SHA`](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs), so it is a valid check.
 
 The issue names the test by project, file and title. Copy the evidence into it: the blob reports and the `github-pages` artifact of a pull request expire after **1 day**.
 
