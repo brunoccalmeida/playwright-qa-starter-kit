@@ -10,7 +10,7 @@ export const logoutResponseSchema = z.object({ success: z.boolean() });
 export type Credentials = { username: string; password: string };
 
 /**
- * Client for /api/auth. Methods return the raw response so each test decides
+ * Client for /ui-api/auth. Methods return the raw response so each test decides
  * what to assert (status, contract, error message); `expectJson` does both.
  *
  * Note: validate and logout read the token from the JSON body. The other
@@ -20,14 +20,14 @@ export class AuthApi {
   constructor(private readonly request: APIRequestContext) {}
 
   login(credentials: Credentials): Promise<APIResponse> {
-    return this.request.post('/api/auth/login', { data: credentials });
+    return this.request.post('/ui-api/auth/login', { data: credentials });
   }
 
   validate(token: string): Promise<APIResponse> {
-    return this.request.post('/api/auth/validate', { data: { token } });
+    return this.request.post('/ui-api/auth/validate', { data: { token } });
   }
 
   logout(token: string): Promise<APIResponse> {
-    return this.request.post('/api/auth/logout', { data: { token } });
+    return this.request.post('/ui-api/auth/logout', { data: { token } });
   }
 }

@@ -8,7 +8,6 @@ export const KNOWN_ISSUES =
  * them. scripts/check-known-issues.ts (in npm run check) keeps both in sync.
  */
 export const knownIssueTitles = {
-  'KI-1': 'GET by id returns 500',
   'KI-2': 'guest messages listed without authentication',
   'KI-3': 'logout does not invalidate the token',
   'KI-4': 'check-out before check-in returns 409',

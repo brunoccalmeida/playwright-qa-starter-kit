@@ -2,7 +2,7 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { z } from 'zod';
 import { authCookie } from './schemas.ts';
 
-/** The list only carries a summary; the full message would come from GET by id. */
+/** The list only carries a summary; the full message comes from GET by id. */
 export const messageSummarySchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
@@ -10,9 +10,13 @@ export const messageSummarySchema = z.object({
   read: z.boolean(),
 });
 export const messageListSchema = z.object({ messages: z.array(messageSummarySchema) });
-export const messageSchema = messageSummarySchema.extend({
+/** `Message` in the message service's OpenAPI (/api/message/v3/api-docs): no `read`, and the id is `messageid`. */
+export const messageSchema = z.object({
+  messageid: z.number().int().positive(),
+  name: z.string(),
   email: z.string(),
   phone: z.string(),
+  subject: z.string(),
   description: z.string(),
 });
 /** Unlike the other resources, a 400 here is a bare array of messages. */
@@ -26,19 +30,19 @@ export type NewMessage = {
   description: string;
 };
 
-/** Client for /api/message. Sending is public; reading should need the admin token (KI-2). */
+/** Client for /ui-api/message. Sending is public; reading should need the admin token (KI-2). */
 export class MessageApi {
   constructor(private readonly request: APIRequestContext) {}
 
   create(message: NewMessage): Promise<APIResponse> {
-    return this.request.post('/api/message', { data: message });
+    return this.request.post('/ui-api/message', { data: message });
   }
 
   list(token?: string): Promise<APIResponse> {
-    return this.request.get('/api/message', { headers: authCookie(token) });
+    return this.request.get('/ui-api/message', { headers: authCookie(token) });
   }
 
   get(id: number, token: string): Promise<APIResponse> {
-    return this.request.get(`/api/message/${String(id)}`, { headers: authCookie(token) });
+    return this.request.get(`/ui-api/message/${String(id)}`, { headers: authCookie(token) });
   }
 }

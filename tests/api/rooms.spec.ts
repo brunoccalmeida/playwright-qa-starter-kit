@@ -4,7 +4,7 @@ import { errorListSchema, successSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, newRoom, stayAfter } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
-test.describe('GET /api/room', () => {
+test.describe('GET /ui-api/room', () => {
   test('lists rooms matching the contract', async ({ roomApi, room }) => {
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
 
@@ -34,7 +34,7 @@ test.describe('GET /api/room', () => {
       const stay = futureStay(3);
       await createBooking(newBooking(room.roomid, stay));
 
-      // Starts on the last night of the booking: POST /api/booking rejects it with 409
+      // Starts on the last night of the booking: POST /ui-api/booking rejects it with 409
       const overlapping = stayAfter(stay, -1);
       const { rooms } = await expectJson(await roomApi.list(overlapping), 200, roomListSchema);
 
@@ -43,7 +43,7 @@ test.describe('GET /api/room', () => {
   );
 });
 
-test.describe('POST /api/room', () => {
+test.describe('POST /ui-api/room', () => {
   test('creates a room that shows up in the list', async ({ roomApi, adminToken }) => {
     const room = newRoom();
 
@@ -72,8 +72,8 @@ test.describe('POST /api/room', () => {
   });
 });
 
-test.describe('GET /api/room/{id}', () => {
-  test.fail('returns the room', knownIssue('KI-1'), async ({ roomApi, room }) => {
+test.describe('GET /ui-api/room/{id}', () => {
+  test('returns the room', async ({ roomApi, room }) => {
     const response = await roomApi.get(room.roomid);
 
     const body = await expectJson(response, 200, roomSchema);

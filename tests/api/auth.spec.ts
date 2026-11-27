@@ -8,7 +8,7 @@ import { errorSchema } from '../../src/api/schemas.ts';
 import { adminCredentials } from '../../src/config/env.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
-test.describe('POST /api/auth/login', () => {
+test.describe('POST /ui-api/auth/login', () => {
   test('returns a token for valid credentials', async ({ authApi }) => {
     const response = await authApi.login(adminCredentials);
 
@@ -26,7 +26,7 @@ test.describe('POST /api/auth/login', () => {
   });
 });
 
-test.describe('POST /api/auth/validate', () => {
+test.describe('POST /ui-api/auth/validate', () => {
   test('accepts a token issued by login', async ({ authApi, adminToken }) => {
     const response = await authApi.validate(adminToken);
 
@@ -49,7 +49,7 @@ test.describe('POST /api/auth/validate', () => {
   });
 });
 
-test.describe('POST /api/auth/logout', () => {
+test.describe('POST /ui-api/auth/logout', () => {
   test('confirms the logout', async ({ authApi, adminToken }) => {
     const response = await authApi.logout(adminToken);
 
