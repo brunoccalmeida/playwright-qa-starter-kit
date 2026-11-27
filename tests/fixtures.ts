@@ -96,8 +96,10 @@ export const test = base.extend<ApiFixtures>({
   },
   room: async ({ roomApi, adminToken, deleteRoomAfterTest }, use) => {
     const room = newRoom();
-    await expectJson(await roomApi.create(room, adminToken), 200, successSchema);
+    // Before the create: a create that saves the room and still answers an
+    // error would otherwise leave it behind
     deleteRoomAfterTest(room.roomName);
+    await expectJson(await roomApi.create(room, adminToken), 200, successSchema);
     // The create response carries no id: find the room by its unique name
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
     await use(expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName));

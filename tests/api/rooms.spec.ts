@@ -50,9 +50,9 @@ test.describe('POST /ui-api/room', () => {
     deleteRoomAfterTest,
   }) => {
     const room = newRoom();
+    deleteRoomAfterTest(room.roomName);
 
     const body = await expectJson(await roomApi.create(room, adminToken), 200, successSchema);
-    deleteRoomAfterTest(room.roomName);
     expect(body.success).toBe(true);
 
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
