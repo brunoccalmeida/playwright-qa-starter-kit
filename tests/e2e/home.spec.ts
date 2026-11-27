@@ -2,7 +2,7 @@ import { expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema } from '../../src/api/room-api.ts';
 import { expect, test } from './fixtures.ts';
 
-// The home page renders only the first three rooms of GET /api/room
+// The home page renders only the first three rooms of GET /ui-api/room
 // (`rooms.slice(0, 3)` in the page's bundle). A room created by a test gets
 // a later id and never shows there, so this test reads the rooms the page
 // will show instead of creating one. If the shared environment wipes its

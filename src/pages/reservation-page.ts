@@ -4,7 +4,7 @@ import type { Stay } from '../api/room-api.ts';
 
 /**
  * A room's reservation page at /reservation/{roomid}. It loads the room
- * from GET /api/room/{id}, broken by KI-1: tests call
+ * from GET /ui-api/room/{id}, broken by KI-1: tests call
  * `serveRoomFromList(page)` before opening it.
  */
 export class ReservationPage {

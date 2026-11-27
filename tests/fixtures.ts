@@ -25,7 +25,7 @@ type ApiFixtures = {
    * restarts their ids and keeps the bookings, so a new room can inherit
    * old ones. Tests use random dates (`futureStay`) and never assert that
    * the room has no bookings. The room is not deleted afterwards:
-   * DELETE /api/room/{id} returns 500 (KI-1).
+   * DELETE /ui-api/room/{id} returns 500 (KI-1).
    */
   room: Room;
   /** Creates a booking the test needs; a refusal explains the state of the room. */

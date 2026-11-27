@@ -18,24 +18,24 @@ export const roomSchema = z.object({
 export const roomListSchema = z.object({ rooms: z.array(roomSchema) });
 
 export type Room = z.infer<typeof roomSchema>;
-/** What POST /api/room takes. The response is only `{ success }`: no id. */
+/** What POST /ui-api/room takes. The response is only `{ success }`: no id. */
 export type NewRoom = Omit<Room, 'roomid'>;
 export type Stay = { checkin: string; checkout: string };
 
-/** Client for /api/room. Creating a room needs the admin token. */
+/** Client for /ui-api/room. Creating a room needs the admin token. */
 export class RoomApi {
   constructor(private readonly request: APIRequestContext) {}
 
   /** All rooms or, with a stay, only those free for those dates. */
   list(stay?: Stay): Promise<APIResponse> {
-    return this.request.get('/api/room', stay === undefined ? {} : { params: stay });
+    return this.request.get('/ui-api/room', stay === undefined ? {} : { params: stay });
   }
 
   create(room: NewRoom, token?: string): Promise<APIResponse> {
-    return this.request.post('/api/room', { data: room, headers: authCookie(token) });
+    return this.request.post('/ui-api/room', { data: room, headers: authCookie(token) });
   }
 
   get(roomid: number): Promise<APIResponse> {
-    return this.request.get(`/api/room/${String(roomid)}`);
+    return this.request.get(`/ui-api/room/${String(roomid)}`);
   }
 }

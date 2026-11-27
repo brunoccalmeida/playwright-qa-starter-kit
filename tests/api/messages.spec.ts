@@ -8,7 +8,7 @@ import { successSchema } from '../../src/api/schemas.ts';
 import { newMessage } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
-test.describe('POST /api/message', () => {
+test.describe('POST /ui-api/message', () => {
   test('accepts a valid message', async ({ messageApi }) => {
     const body = await expectJson(await messageApi.create(newMessage()), 200, successSchema);
 
@@ -30,7 +30,7 @@ test.describe('POST /api/message', () => {
   });
 });
 
-test.describe('GET /api/message', () => {
+test.describe('GET /ui-api/message', () => {
   test('lists the new message for an admin', async ({ messageApi, adminToken }) => {
     const message = newMessage();
     await expectJson(await messageApi.create(message), 200, successSchema);
@@ -54,7 +54,7 @@ test.describe('GET /api/message', () => {
   });
 });
 
-test.describe('GET /api/message/{id}', () => {
+test.describe('GET /ui-api/message/{id}', () => {
   test.fail('returns the full message', knownIssue('KI-1'), async ({ messageApi, adminToken }) => {
     const message = newMessage();
     await expectJson(await messageApi.create(message), 200, successSchema);

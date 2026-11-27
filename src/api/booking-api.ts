@@ -13,7 +13,7 @@ export const bookingSchema = z.object({
 });
 export const bookingListSchema = z.object({ bookings: z.array(bookingSchema) });
 
-/** What POST /api/booking takes; email and phone are not echoed back. */
+/** What POST /ui-api/booking takes; email and phone are not echoed back. */
 export type NewBooking = {
   roomid: number;
   firstname: string;
@@ -24,22 +24,22 @@ export type NewBooking = {
   bookingdates: Stay;
 };
 
-/** Client for /api/booking. Creating is public; reading needs the admin token. */
+/** Client for /ui-api/booking. Creating is public; reading needs the admin token. */
 export class BookingApi {
   constructor(private readonly request: APIRequestContext) {}
 
   create(booking: NewBooking): Promise<APIResponse> {
-    return this.request.post('/api/booking', { data: booking });
+    return this.request.post('/ui-api/booking', { data: booking });
   }
 
   listByRoom(roomid: number, token?: string): Promise<APIResponse> {
-    return this.request.get('/api/booking', {
+    return this.request.get('/ui-api/booking', {
       params: { roomid },
       headers: authCookie(token),
     });
   }
 
   get(bookingid: number, token: string): Promise<APIResponse> {
-    return this.request.get(`/api/booking/${String(bookingid)}`, { headers: authCookie(token) });
+    return this.request.get(`/ui-api/booking/${String(bookingid)}`, { headers: authCookie(token) });
   }
 }

@@ -36,7 +36,8 @@ export class AdminRoomsPage {
     // Registered before the navigation, or a fast response is missed
     const roomList = this.page.waitForResponse(
       (response) =>
-        response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/room',
+        response.request().method() === 'GET' &&
+        new URL(response.url()).pathname === '/ui-api/room',
     );
     // If expectLoaded fails first, the page closes and roomList rejects
     // with nobody awaiting it yet. Marking it handled avoids an unhandled
