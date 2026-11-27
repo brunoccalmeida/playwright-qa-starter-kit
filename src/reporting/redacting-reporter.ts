@@ -116,6 +116,11 @@ export function redactResult(result: Pick<TestResult, 'errors' | 'attachments'>)
  * It changes the objects that the other reporters receive, which the reporter
  * API does not document; scripts/check-report-redaction.ts fails if that stops
  * working. Revisit when Playwright ships its reporter `secrets` option (#21).
+ *
+ * Not covered: the tests' stdout and stderr (so `DEBUG=pw:api` in CI would
+ * publish the cookie), values in a URL or a response body, and attachments
+ * with a `body` instead of a `path` or with a type other than `text/*` and
+ * `application/json`. None of the kit's attachments falls there today.
  */
 export default class RedactingReporter implements Reporter {
   onStepEnd(_test: TestCase, _result: TestResult, step: TestStep): void {

@@ -144,7 +144,7 @@ jobs:
 
       # Same as in the api job. The password never reaches a step title
       # (fillSecret); a test that fails mid-login can still print it, in the
-      # call log or page snapshot (docs/PROJECT_SESSION_SUMMARY.md, Mission 6).
+      # call log or page snapshot (README, "Secrets stay out of the report"; #21).
       - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

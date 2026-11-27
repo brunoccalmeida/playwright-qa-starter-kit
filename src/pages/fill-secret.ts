@@ -12,8 +12,7 @@ import { expect, type Locator } from '@playwright/test';
  *
  * Remaining risk: a test that FAILS while the secret is in the field still
  * prints it, in the call log (`value="..."`) and in the page snapshot of the
- * error context. Playwright has no supported redaction yet (see
- * docs/PROJECT_SESSION_SUMMARY.md, Mission 6).
+ * error context. Playwright has no supported redaction yet (#21 tracks it).
  */
 export async function fillSecret(field: Locator, value: string): Promise<void> {
   // The checks fill would make before typing: visible, enabled, editable
