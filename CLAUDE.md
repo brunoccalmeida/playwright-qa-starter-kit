@@ -8,7 +8,7 @@ As regras do projeto ficam em um único lugar, compartilhado com o GitHub Copilo
 
 As regras que valem para todo projeto estão em [`.claude/rules/core.md`](.claude/rules/core.md), que vem do [automation-template](https://github.com/brunoccalmeida/automation-template) (versão em `.copier-answers.yml`) e não é editado aqui. Onde as duas divergem, vale a exceção abaixo.
 
-Histórico e contexto das sessões: [docs/PROJECT_SESSION_SUMMARY.md](docs/PROJECT_SESSION_SUMMARY.md)
+Estado do projeto e próxima missão: [docs/PROJECT_SESSION_SUMMARY.md](docs/PROJECT_SESSION_SUMMARY.md)
 
 ## Exceções ao core
 
