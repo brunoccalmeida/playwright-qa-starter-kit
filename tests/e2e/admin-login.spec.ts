@@ -11,8 +11,12 @@ test.describe('Admin login', () => {
 
   test('wrong password shows an error and stays on the login form', async ({ adminLoginPage }) => {
     await adminLoginPage.goto();
-    await adminLoginPage.login({ ...adminCredentials, password: 'wrong-password' });
+    const response = await adminLoginPage.login({
+      ...adminCredentials,
+      password: 'wrong-password',
+    });
 
+    expect(response.status()).toBe(401);
     await expect(adminLoginPage.error).toHaveText('Invalid credentials');
     await expect(adminLoginPage.heading).toBeVisible();
   });
