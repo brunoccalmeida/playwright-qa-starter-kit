@@ -66,7 +66,7 @@ grep -rnE 'automationintesting|brunoccalmeida|Restful Booker' . \
 | `.github/workflows/ci.yml`        | `PLAYWRIGHT_HTML_TITLE` in the `report` job (`BASE_URL` was set in step 2).                                                                                                          |
 | `tests/known-issues.ts`           | The `KNOWN_ISSUES` URL: the report's links to each defect would otherwise open this kit's list.                                                                                      |
 | `docs/KNOWN_ISSUES.md`            | The introduction and the report link. The entries go in step 4.                                                                                                                      |
-| `docs/FLAKY_TESTS.md`             | The report link in section 2. The worked example (#25) links to this kit on purpose: keep it as an example of the method.                                                            |
+| `docs/FLAKY_TESTS_PLAYWRIGHT.md`  | The report link in the evidence table. The worked example (#25) links to this kit on purpose: keep it as an example of the method.                                                   |
 | `README.md`, `README.pt-BR.md`    | Rewrite them for the client: badges, target application and report links.                                                                                                            |
 | `.github/copilot-instructions.md` | "O que é este projeto": the rules the AI agents load in every chat.                                                                                                                  |
 | `.claude/settings.json`           | The `mission` plugin marketplace. Keep it to close missions with `/mission:close-mission`, or remove `extraKnownMarketplaces`, `enabledPlugins` and the contract table in the rules. |
@@ -93,15 +93,15 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 
 `npx tsc` now lists what still refers to the deleted files. Fix each one:
 
-| File                            | What to change                                                                                                 |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `tests/fixtures.ts`             | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                  |
-| `tests/e2e/fixtures.ts`         | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports. |
-| `src/pages/admin-rooms-page.ts` | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
-| `tests/api/auth.spec.ts`        | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
-| `tests/known-issues.ts`         | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
-| `docs/KNOWN_ISSUES.md`          | Delete every `## KI-n` entry and the `Test environment limit` section.                                         |
-| `docs/FLAKY_TESTS.md`           | Delete the "Open case" section: it refers to `createBooking` and to the section deleted above.                 |
+| File                             | What to change                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                  |
+| `tests/e2e/fixtures.ts`          | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports. |
+| `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
+| `tests/api/auth.spec.ts`         | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
+| `tests/known-issues.ts`          | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
+| `docs/KNOWN_ISSUES.md`           | Delete every `## KI-n` entry and the `Test environment limit` section.                                         |
+| `docs/FLAKY_TESTS_PLAYWRIGHT.md` | Delete the "Open case" section: it refers to `createBooking` and to the section deleted above.                 |
 
 These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [redacting-reporter.ts](../src/reporting/redacting-reporter.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
 

@@ -1,5 +1,5 @@
 // Sentinel: in CI, a test that passes only on a retry must fail the run
-// (docs/FLAKY_TESTS.md, section 3). Playwright reports such a test as "flaky"
+// (docs/FLAKY_TESTS.md, section 3; docs/FLAKY_TESTS_PLAYWRIGHT.md). Playwright reports such a test as "flaky"
 // and, by default, still exits 0, so the merge gate would show green and the
 // instability would pass unnoticed.
 //
@@ -58,7 +58,7 @@ const problem = !probeReached
   : run.exitCode === 1
     ? undefined
     : `A test that passed only on a retry left the run with exit code ${String(run.exitCode)}. ` +
-      'In CI it must fail the run: set failOnFlakyTests (docs/FLAKY_TESTS.md).';
+      'In CI it must fail the run: set failOnFlakyTests (docs/FLAKY_TESTS_PLAYWRIGHT.md).';
 
 if (problem === undefined) {
   console.log(`Flaky policy holds: a flaky test ended "${expectedOutcome}" and failed the run.`);

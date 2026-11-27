@@ -1,0 +1,32 @@
+# One mission per chat: a cohesive goal small enough for one pull request
+# (.claude/rules/core.md, "Mission cycle"). The priority label
+# (priority: P0/P1/P2) is set at triage, not by whoever opens the issue.
+name: Mission
+description: A cohesive piece of work with verifiable acceptance criteria.
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed
+      description: What is true today, with evidence (file, command output, CI run, link).
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: The cost of leaving it as is. Cite the practice or source that supports the change.
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Checkable outcomes; each one should be verifiable by a test or a command.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Related issues, siblings in other repositories, blockers.

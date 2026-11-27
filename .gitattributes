@@ -1,4 +1,5 @@
-# Git stores text files with LF and checks them out with LF on every OS,
-# so Prettier's default `endOfLine: "lf"` holds in any clone (Windows
-# included). Source: https://prettier.io/docs/options#end-of-line
+# Git stores text files with LF and writes LF to the working tree on every OS,
+# whatever core.autocrlf says, so formatters that require LF pass after a
+# fresh checkout on Windows too (git-scm.com/docs/gitattributes, "eol").
+# Binary files are left as they are (text=auto).
 * text=auto eol=lf
