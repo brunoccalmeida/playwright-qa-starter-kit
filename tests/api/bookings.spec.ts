@@ -6,7 +6,7 @@ import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
-test.describe('POST /api/booking', () => {
+test.describe('POST /ui-api/booking', () => {
   test('creates a booking and echoes it back', async ({ createBooking, room }) => {
     const booking = newBooking(room.roomid, futureStay());
 
@@ -121,7 +121,7 @@ test.describe('POST /api/booking', () => {
   );
 });
 
-test.describe('GET /api/booking?roomid=', () => {
+test.describe('GET /ui-api/booking?roomid=', () => {
   test("lists the room's bookings for an admin", async ({
     bookingApi,
     createBooking,
@@ -146,17 +146,13 @@ test.describe('GET /api/booking?roomid=', () => {
   });
 });
 
-test.describe('GET /api/booking/{id}', () => {
-  test.fail(
-    'returns the booking',
-    knownIssue('KI-1'),
-    async ({ bookingApi, createBooking, room, adminToken }) => {
-      const created = await createBooking(newBooking(room.roomid, futureStay()));
+test.describe('GET /ui-api/booking/{id}', () => {
+  test('returns the booking', async ({ bookingApi, createBooking, room, adminToken }) => {
+    const created = await createBooking(newBooking(room.roomid, futureStay()));
 
-      const response = await bookingApi.get(created.bookingid, adminToken);
+    const response = await bookingApi.get(created.bookingid, adminToken);
 
-      const body = await expectJson(response, 200, bookingSchema);
-      expect(body).toEqual(created);
-    },
-  );
+    const body = await expectJson(response, 200, bookingSchema);
+    expect(body).toEqual(created);
+  });
 });

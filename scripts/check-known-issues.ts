@@ -10,6 +10,8 @@ import { knownIssueTitles } from '../tests/known-issues.ts';
 
 const doc = 'docs/KNOWN_ISSUES.md';
 const markdown = readFileSync(new URL(`../${doc}`, import.meta.url), 'utf8');
+// Only open issues (`## KI-n`): a resolved one is a `### KI-n` under
+// "Resolved issues" and has no test.fail() left to link to it.
 const inDoc = [...markdown.matchAll(/^## (KI-\d+): (.+)$/gm)].map(
   ([, id, title]) => `${id ?? ''}: ${title ?? ''}`,
 );
