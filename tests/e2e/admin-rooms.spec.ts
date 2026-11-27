@@ -16,13 +16,14 @@ test.describe('Admin rooms', () => {
     await expect(adminRoomsPage.room(room.roomName)).toBeVisible();
   });
 
-  // The room is not deleted afterwards yet (#61). Its unique name keeps it
-  // from clashing with other data.
   test('the admin creates a room and it is listed and saved', async ({
     adminRoomsPage,
     roomApi,
+    deleteRoomAfterTest,
   }) => {
     const room = newRoom();
+    // Before the UI creates it: a failure after the save still cleans up
+    deleteRoomAfterTest(room.roomName);
 
     await adminRoomsPage.goto();
     await adminRoomsPage.createRoom(room);

@@ -22,7 +22,7 @@ export type Room = z.infer<typeof roomSchema>;
 export type NewRoom = Omit<Room, 'roomid'>;
 export type Stay = { checkin: string; checkout: string };
 
-/** Client for /ui-api/room. Creating a room needs the admin token. */
+/** Client for /ui-api/room. Creating and deleting a room need the admin token. */
 export class RoomApi {
   constructor(private readonly request: APIRequestContext) {}
 
@@ -37,5 +37,9 @@ export class RoomApi {
 
   get(roomid: number): Promise<APIResponse> {
     return this.request.get(`/ui-api/room/${String(roomid)}`);
+  }
+
+  delete(roomid: number, token?: string): Promise<APIResponse> {
+    return this.request.delete(`/ui-api/room/${String(roomid)}`, { headers: authCookie(token) });
   }
 }
