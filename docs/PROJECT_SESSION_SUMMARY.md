@@ -31,6 +31,7 @@ Vistas em missões anteriores; nenhum portão as pega.
 - **Sondas:** confira o diff da mutação antes de ler o resultado (um `sed` por intervalo já mutou o título em vez da asserção, e o teste "passou"). Mutação só vale depois de uma linha de base verde. `git revert` desfaz o commit inteiro, inclusive outra sonda, e não aceita `-q`: confira `git diff main --stat` depois de desfazer.
 - **Segredos na evidência:** cite o formato de um segredo, nunca o valor. No CI, o relatório embute o diff do PR (`captureGitInfo`), e um token copiado para um documento como evidência já foi parar no relatório. Um token literal num spec aparece no `snippet` do relatório: monte o valor em tempo de execução.
 - **Flaky no CI:** `gh run view --log-failed` e a lista de runs falhos não veem tentativas que terminaram verdes; percorra `actions/runs/{id}/attempts/{n}/jobs`.
+- **Script de sonda fora do repositório** (scratchpad): importe o `playwright-core` do projeto por URL `file:///` (ESM ignora `NODE_PATH`).
 - **Falha só no CI:** reproduza na imagem oficial (`mcr.microsoft.com/playwright:v<versão>-noble`, `--ipc=host`, `CI=true`), com o código copiado por `git ls-files | tar` e `npm ci` dentro do container.
 - **Travas do agente:** o Claude Code recarrega o `settings.json` com atraso; depois de mudar uma regra, repita a sonda antes de concluir que ela não funciona. Bloqueio pelo motivo errado não prova a regra: uma sonda de controle separa as hipóteses.
 
