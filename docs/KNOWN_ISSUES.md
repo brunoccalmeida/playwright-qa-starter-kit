@@ -50,6 +50,14 @@ Issues are numbered in the order they were found.
 - **Impact:** guests see the room as available and their booking fails.
 - **Test:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `GET /ui-api/room › leaves out a room booked for part of the requested dates`.
 
+## KI-7: unknown room id returns 500
+
+- **Endpoints:** `GET /ui-api/room/{id}` and `DELETE /ui-api/room/{id}`.
+- **Expected:** `404` for an id with no room, whether it was deleted or never existed ([RFC 9110, 404 Not Found](https://www.rfc-editor.org/rfc/rfc9110#section-15.5.5)).
+- **Actual:** `500`, after about 31 seconds. Observed on 2026-11-27: `GET` on a room just deleted and on id `999999` returns `{"status":500,"error":"Internal Server Error"}` in 31.3 s (an existing room: 0.25 s); deleting the same room a second time returns `{"errors":["An unexpected error occurred"]}`. The delay comes from the UI API, which sends these requests through a fetch that retries a `500` after 1, 2, 4, 8 and 16 seconds ([`route.ts`](https://github.com/mwinteringham/restful-booker-platform/blob/2069ba1c622c7327395d329eccdbe4e8ea90349f/assets/src/app/ui-api/room/%5Bid%5D/route.ts#L3)).
+- **Impact:** a client cannot tell a missing room from a server failure ([RFC 9110, 500 Internal Server Error](https://www.rfc-editor.org/rfc/rfc9110#section-15.6.1)), every lookup of a deleted room counts as a server error, and each one holds the request for half a minute.
+- **Test:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `DELETE /ui-api/room/{id} › a deleted room is not found`.
+
 ## Test environment limit: rooms and bookings reset independently
 
 This is a limit of the shared environment, not a numbered defect: no test asserts it.

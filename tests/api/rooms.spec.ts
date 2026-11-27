@@ -1,4 +1,4 @@
-import { expectFound, expectJson } from '../../src/api/expect-json.ts';
+import { expectFound, expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { roomListSchema, roomSchema } from '../../src/api/room-api.ts';
 import { errorListSchema, successSchema } from '../../src/api/schemas.ts';
 import { futureStay, newBooking, newRoom, stayAfter } from '../../src/data/factories.ts';
@@ -44,10 +44,15 @@ test.describe('GET /ui-api/room', () => {
 });
 
 test.describe('POST /ui-api/room', () => {
-  test('creates a room that shows up in the list', async ({ roomApi, adminToken }) => {
+  test('creates a room that shows up in the list', async ({
+    roomApi,
+    adminToken,
+    deleteRoomAfterTest,
+  }) => {
     const room = newRoom();
 
     const body = await expectJson(await roomApi.create(room, adminToken), 200, successSchema);
+    deleteRoomAfterTest(room.roomName);
     expect(body.success).toBe(true);
 
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
@@ -79,4 +84,41 @@ test.describe('GET /ui-api/room/{id}', () => {
     const body = await expectJson(response, 200, roomSchema);
     expect(body).toEqual(room);
   });
+});
+
+// The room fixture's teardown finds these rooms already gone and records it
+// as a "cleanup" annotation; it still deletes the room if the test fails first.
+test.describe('DELETE /ui-api/room/{id}', () => {
+  test('deletes the room, which leaves the list', async ({ roomApi, adminToken, room }) => {
+    const body = await expectJson(
+      await roomApi.delete(room.roomid, adminToken),
+      200,
+      successSchema,
+    );
+    expect(body.success).toBe(true);
+
+    const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
+    // By name: the shared environment may already reuse the id
+    expect(rooms.map((r) => r.roomName)).not.toContain(room.roomName);
+  });
+
+  test('requires authentication', async ({ roomApi, room }) => {
+    const response = await roomApi.delete(room.roomid);
+
+    const body = await expectJson(response, 401, errorListSchema);
+    expect(body.errors).toEqual(['Authentication required']);
+  });
+
+  test.fail(
+    'a deleted room is not found',
+    knownIssue('KI-7'),
+    async ({ roomApi, adminToken, room }) => {
+      // The 500 takes about 31 s (part of KI-7). Without the extra time the
+      // test would time out, a failure that proves nothing about the bug.
+      test.slow();
+      await expectJson(await roomApi.delete(room.roomid, adminToken), 200, successSchema);
+
+      await expectStatus(await roomApi.get(room.roomid), 404);
+    },
+  );
 });
