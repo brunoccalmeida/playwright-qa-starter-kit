@@ -56,7 +56,7 @@ No test is in quarantine today.
 
 ## Open case: a booking refused with 409 (#42, #54)
 
-The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts (#42); on 2026-11-26, two refused bookings were found already stored with their exact dates (#54). The likely cause, read in the application source and not observed yet, is the application retrying a `POST` it had stored ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` records how long the refusal took and marks the room's booking that has the same guest, so the next occurrence confirms or refutes it. It will turn the run red: copy that evidence into #54.
+The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts (#42); on 2026-11-26, two refused bookings found the room already holding a booking with exactly the requested dates (#54). The likely cause, read in the application source and not observed yet, is the application retrying a `POST` it had stored ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` records how long the refusal took and marks the room's booking that has the same guest, so the next occurrence confirms or refutes it. It will turn the run red: copy that evidence into #54.
 
 ## Sources
 
