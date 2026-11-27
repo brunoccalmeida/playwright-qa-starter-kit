@@ -86,7 +86,7 @@ The login code stays, to be adapted in step 5: every browser project depends on 
 
 ```sh
 rm src/api/{booking,message,room}-api.ts src/api/create-booking.ts src/data/factories.ts
-rm src/pages/{home,reservation}-page.ts src/pages/known-issue-workarounds.ts
+rm src/pages/{home,reservation}-page.ts
 rm tests/api/{bookings,messages,rooms}.spec.ts
 rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 ```

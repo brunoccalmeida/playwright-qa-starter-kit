@@ -1,16 +1,7 @@
 import { bookingListSchema } from '../../src/api/booking-api.ts';
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { futureStay, newBooking } from '../../src/data/factories.ts';
-import { serveRoomFromList } from '../../src/pages/known-issue-workarounds.ts';
 import { expect, test } from './fixtures.ts';
-
-// Without the workaround the reservation page renders blank: it loads the
-// room from GET /ui-api/room/{id}, which returns 500 (KI-1). The workaround
-// keeps the journey testable; the defect itself stays tracked by the API
-// test that asserts GET /ui-api/room/{id} works.
-test.beforeEach(async ({ page }) => {
-  await serveRoomFromList(page);
-});
 
 test.describe('Room reservation', () => {
   test('a guest books a room for the chosen dates', async ({

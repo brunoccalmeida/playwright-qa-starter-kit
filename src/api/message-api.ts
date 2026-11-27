@@ -2,7 +2,7 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { z } from 'zod';
 import { authCookie } from './schemas.ts';
 
-/** The list only carries a summary; the full message would come from GET by id. */
+/** The list only carries a summary; the full message comes from GET by id. */
 export const messageSummarySchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
@@ -10,9 +10,13 @@ export const messageSummarySchema = z.object({
   read: z.boolean(),
 });
 export const messageListSchema = z.object({ messages: z.array(messageSummarySchema) });
-export const messageSchema = messageSummarySchema.extend({
+/** `Message` in the message service's OpenAPI (/api/message/v3/api-docs): no `read`, and the id is `messageid`. */
+export const messageSchema = z.object({
+  messageid: z.number().int().positive(),
+  name: z.string(),
   email: z.string(),
   phone: z.string(),
+  subject: z.string(),
   description: z.string(),
 });
 /** Unlike the other resources, a 400 here is a bare array of messages. */

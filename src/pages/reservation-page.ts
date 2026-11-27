@@ -2,11 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import type { NewBooking } from '../api/booking-api.ts';
 import type { Stay } from '../api/room-api.ts';
 
-/**
- * A room's reservation page at /reservation/{roomid}. It loads the room
- * from GET /ui-api/room/{id}, broken by KI-1: tests call
- * `serveRoomFromList(page)` before opening it.
- */
+/** A room's reservation page at /reservation/{roomid}. */
 export class ReservationPage {
   readonly confirmation: Locator;
   /** The booked dates shown under the confirmation, as `checkin - checkout`. */

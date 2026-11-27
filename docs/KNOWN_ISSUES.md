@@ -10,14 +10,6 @@ Defects in the [Restful Booker Platform](https://automationintesting.online) fou
 
 Issues are numbered in the order they were found.
 
-## KI-1: GET by id returns 500
-
-- **Endpoints:** `GET /ui-api/room/{id}`, `GET /ui-api/booking/{id}`, `GET /ui-api/message/{id}` (with or without the admin `token` cookie). During exploratory testing, `PUT` and `DELETE` on `/ui-api/{room,booking}/{id}` also returned 500; `DELETE /ui-api/room/{id}` was confirmed again (500) on rooms created by the tests themselves; `PUT` and the booking endpoints were not probed again, to avoid changing data the tests did not create.
-- **Expected:** 200 with the resource, for an ID that was just created.
-- **Actual:** `500` with the body `Internal Server Error` (plain text, not JSON).
-- **Impact:** the `/reservation/:id` page renders blank, so guests cannot book a room. The browser tests work around it by answering `GET /ui-api/room/{id}` with the room from `GET /ui-api/room` ([known-issue-workarounds.ts](../src/pages/known-issue-workarounds.ts)). Data created by the tests cannot be deleted.
-- **Tests:** [rooms.spec.ts](../tests/api/rooms.spec.ts) `GET /ui-api/room/{id} › returns the room`; [bookings.spec.ts](../tests/api/bookings.spec.ts) `GET /ui-api/booking/{id} › returns the booking`; [messages.spec.ts](../tests/api/messages.spec.ts) `GET /ui-api/message/{id} › returns the full message`.
-
 ## KI-2: guest messages listed without authentication
 
 - **Endpoint:** `GET /ui-api/message`
@@ -66,3 +58,15 @@ This is a limit of the shared environment, not a numbered defect: no test assert
 - **Consequence for the tests:** a test never assumes that a new room is empty, and each one books random dates one to ten years ahead.
 - **Open question:** in 3 of the 36 CI attempts up to 2026-11-08, the first bookings of a run were refused with `409 {"error":"Failed to create booking"}` for 3 to 5 seconds, then bookings worked again. In the application source, this 409 comes from the booking service itself (a date conflict in that room, or invalid dates), not from a generic error. An inherited booking is one possible explanation, and the evidence so far weighs against it: each retry used a new room and new random dates, and an inherited booking would not go away after a few seconds. The cause is unknown.
 - **Diagnosis:** a refused booking now reports the room, the requested dates and the dates the room holds at that moment. A booking covering the requested dates would support the inherited-booking explanation. An empty list would not settle it, because the room is read after the refusal and a reset could happen in between.
+
+## Resolved issues
+
+Kept so the numbering stays stable and the record shows how each fix was detected.
+
+### KI-1: GET by id returns 500
+
+- **Resolved:** 2026-11-26, by the application change [mwinteringham/restful-booker-platform#382](https://github.com/mwinteringham/restful-booker-platform/pull/382), which also moved the UI API from `/api` to `/ui-api`. The suite detected the fix: the `test.fail()` tests started failing with "Expected to fail, but passed" ([#59](https://github.com/brunoccalmeida/playwright-qa-starter-kit/issues/59)).
+- **Endpoints (then):** `GET /api/room/{id}`, `GET /api/booking/{id}`, `GET /api/message/{id}`, plus `PUT` and `DELETE` on `/api/{room,booking}/{id}`.
+- **Was:** `500` with the body `Internal Server Error` (plain text, not JSON).
+- **Impact while open:** the `/reservation/:id` page rendered blank, so guests could not book a room; the browser tests served that room from `GET /api/room` with `page.route`. Data created by the tests could not be deleted.
+- **Now:** `GET`, `PUT` and `DELETE` by id under `/ui-api` return 200. The tests below assert it as regular tests: [rooms.spec.ts](../tests/api/rooms.spec.ts) `GET /ui-api/room/{id} › returns the room`; [bookings.spec.ts](../tests/api/bookings.spec.ts) `GET /ui-api/booking/{id} › returns the booking`; [messages.spec.ts](../tests/api/messages.spec.ts) `GET /ui-api/message/{id} › returns the full message`.

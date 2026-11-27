@@ -55,7 +55,7 @@ test.describe('GET /ui-api/message', () => {
 });
 
 test.describe('GET /ui-api/message/{id}', () => {
-  test.fail('returns the full message', knownIssue('KI-1'), async ({ messageApi, adminToken }) => {
+  test('returns the full message', async ({ messageApi, adminToken }) => {
     const message = newMessage();
     await expectJson(await messageApi.create(message), 200, successSchema);
     const { messages } = await expectJson(

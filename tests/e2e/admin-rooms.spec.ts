@@ -16,8 +16,8 @@ test.describe('Admin rooms', () => {
     await expect(adminRoomsPage.room(room.roomName)).toBeVisible();
   });
 
-  // The room is not deleted afterwards: DELETE /ui-api/room/{id} returns 500
-  // (KI-1). Its unique name keeps it from clashing with other data.
+  // The room is not deleted afterwards yet (#61). Its unique name keeps it
+  // from clashing with other data.
   test('the admin creates a room and it is listed and saved', async ({
     adminRoomsPage,
     roomApi,

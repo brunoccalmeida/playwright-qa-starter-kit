@@ -147,16 +147,12 @@ test.describe('GET /ui-api/booking?roomid=', () => {
 });
 
 test.describe('GET /ui-api/booking/{id}', () => {
-  test.fail(
-    'returns the booking',
-    knownIssue('KI-1'),
-    async ({ bookingApi, createBooking, room, adminToken }) => {
-      const created = await createBooking(newBooking(room.roomid, futureStay()));
+  test('returns the booking', async ({ bookingApi, createBooking, room, adminToken }) => {
+    const created = await createBooking(newBooking(room.roomid, futureStay()));
 
-      const response = await bookingApi.get(created.bookingid, adminToken);
+    const response = await bookingApi.get(created.bookingid, adminToken);
 
-      const body = await expectJson(response, 200, bookingSchema);
-      expect(body).toEqual(created);
-    },
-  );
+    const body = await expectJson(response, 200, bookingSchema);
+    expect(body).toEqual(created);
+  });
 });

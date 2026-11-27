@@ -73,7 +73,7 @@ test.describe('POST /ui-api/room', () => {
 });
 
 test.describe('GET /ui-api/room/{id}', () => {
-  test.fail('returns the room', knownIssue('KI-1'), async ({ roomApi, room }) => {
+  test('returns the room', async ({ roomApi, room }) => {
     const response = await roomApi.get(room.roomid);
 
     const body = await expectJson(response, 200, roomSchema);
