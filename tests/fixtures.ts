@@ -24,7 +24,9 @@ type ApiFixtures = {
    * empty, though: the shared environment periodically deletes rooms,
    * restarts their ids and keeps the bookings, so a new room can inherit
    * old ones. Tests use random dates (`futureStay`) and never assert that
-   * the room has no bookings. It is deleted after the test.
+   * the room has no bookings. It is deleted after the test. If the test
+   * fails and the room is gone, the teardown adds an error naming the
+   * environment as the likely cause.
    */
   room: Room;
   /**
@@ -94,7 +96,7 @@ export const test = base.extend<ApiFixtures>({
       }
     }
   },
-  room: async ({ roomApi, adminToken, deleteRoomAfterTest }, use) => {
+  room: async ({ roomApi, adminToken, deleteRoomAfterTest }, use, testInfo) => {
     const room = newRoom();
     // Before the create: a create that saves the room and still answers an
     // error would otherwise leave it behind
@@ -102,7 +104,25 @@ export const test = base.extend<ApiFixtures>({
     await expectJson(await roomApi.create(room, adminToken), 200, successSchema);
     // The create response carries no id: find the room by its unique name
     const { rooms } = await expectJson(await roomApi.list(), 200, roomListSchema);
-    await use(expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName));
+    const created = expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName);
+    await use(created);
+    if (testInfo.status === 'passed' || testInfo.status === 'skipped') {
+      return;
+    }
+    // A failed test whose room vanished: the shared environment is the
+    // likely cause, and the test's own error ("element not found", 404)
+    // does not say so (#65). This teardown runs before deleteRoomAfterTest's.
+    const after = await expectJson(await roomApi.list(), 200, roomListSchema);
+    if (!after.rooms.some((r) => r.roomName === room.roomName)) {
+      const ids = after.rooms.map((r) => r.roomid).join(', ');
+      throw new Error(
+        `Environment: room "${room.roomName}" (id ${String(created.roomid)}), created for this test, ` +
+          `was deleted during it by something outside the test: the shared environment's room reset, ` +
+          `which restarts ids at 1, or another user. Room ids now: ${ids}. ` +
+          `If the test's error involves this room, the cause is the environment, not the app. ` +
+          `See "Test environment limit" in docs/KNOWN_ISSUES.md.`,
+      );
+    }
   },
   createBooking: async ({ bookingApi, adminToken }, use) => {
     await use((booking) => createBookingOrExplain(bookingApi, booking, adminToken));
