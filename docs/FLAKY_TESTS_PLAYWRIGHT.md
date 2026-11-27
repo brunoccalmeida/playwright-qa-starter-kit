@@ -54,9 +54,9 @@ No test is in quarantine today.
 5. **Fixed.** `AdminRoomsPage.goto()` registers `waitForResponse` for `GET /api/room` before navigating and returns only when the rows on screen match the rooms in that response.
 6. **Proved.** The probe went green, 3 of 3, and the E2E suite went 91 of 91 in the Playwright container, with `--repeat-each=5 --retries=0`.
 
-## Open case: the first booking refused with 409 (#42)
+## Open case: a booking refused with 409 (#42, #54)
 
-The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts; 2 of them passed on retry, unnoticed. The cause is not known yet. The likeliest hypothesis left, a booking inherited by a reset room id, has evidence against it ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` now records the room's bookings when a booking is refused, so the next occurrence carries the evidence. It will turn the run red: open a new issue that links to #42, and copy that evidence into it.
+The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts (#42); on 2026-11-26, two refused bookings were found already stored with their exact dates (#54). The likely cause, read in the application source and not observed yet, is the application retrying a `POST` it had stored ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` records how long the refusal took and marks the room's booking that has the same guest, so the next occurrence confirms or refutes it. It will turn the run red: copy that evidence into #54.
 
 ## Sources
 
