@@ -24,7 +24,9 @@ interface Facts {
 
 interface Readme {
   file: string;
-  claims: { fact: keyof Facts; pattern: RegExp }[];
+  // optionalWhenZero: a claim the README may leave out while the fact is 0
+  // (a new project has no resolved defect to mention)
+  claims: { fact: keyof Facts; pattern: RegExp; optionalWhenZero?: boolean }[];
 }
 
 const READMES: Readme[] = [
@@ -37,6 +39,7 @@ const READMES: Readme[] = [
       {
         fact: 'resolvedDefects',
         pattern: /^- \*\*Defects found and tracked:\*\* .*; (\d+) more \[already fixed/m,
+        optionalWhenZero: true,
       },
     ],
   },
@@ -52,6 +55,7 @@ const READMES: Readme[] = [
       {
         fact: 'resolvedDefects',
         pattern: /^- \*\*Defeitos encontrados e acompanhados:\*\* .*; mais (\d+) \[já corrigido/m,
+        optionalWhenZero: true,
       },
     ],
   },
@@ -112,12 +116,10 @@ function countProject(counts: Map<string, number>, project: string): number {
   return count;
 }
 
-// Open issues are `## KI-n` headings; resolved ones are `### KI-n` under "Resolved issues"
+// Open issues are `## KI-n` headings; resolved ones are `### KI-n` under
+// "Resolved issues", a section a new project does not have yet (docs/ADAPTING.md)
 function countDefects(): { open: number; resolved: number } {
-  const doc = 'docs/KNOWN_ISSUES.md';
-  const heading = '## Resolved issues';
-  const [before = '', after] = read(doc).split(new RegExp(`^${heading}$`, 'm'));
-  if (after === undefined) throw new Error(`${doc} lacks "${heading}"`);
+  const [before = '', after = ''] = read('docs/KNOWN_ISSUES.md').split(/^## Resolved issues$/m);
   return {
     open: [...before.matchAll(/^## KI-\d+:/gm)].length,
     resolved: [...after.matchAll(/^### KI-\d+:/gm)].length,
@@ -144,9 +146,13 @@ if (firefox !== facts.e2eTests) {
 
 for (const readme of READMES) {
   const markdown = read(readme.file);
-  const errors = readme.claims.flatMap(({ fact, pattern }) => {
+  const errors = readme.claims.flatMap(({ fact, pattern, optionalWhenZero }) => {
     const found = pattern.exec(markdown)?.[1];
-    if (found === undefined) return [`no longer finds the ${fact} claim: ${String(pattern)}`];
+    if (found === undefined) {
+      return optionalWhenZero === true && facts[fact] === 0
+        ? []
+        : [`no longer finds the ${fact} claim: ${String(pattern)}`];
+    }
     return Number(found) === facts[fact]
       ? []
       : [`says ${found} ${fact}, the repository has ${String(facts[fact])}`];
