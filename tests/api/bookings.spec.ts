@@ -3,7 +3,7 @@ import { BookingApi, bookingListSchema, bookingSchema } from '../../src/api/book
 import { createBookingOrExplain, SAME_GUEST } from '../../src/api/create-booking.ts';
 import { expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { errorListSchema, errorSchema } from '../../src/api/schemas.ts';
-import { futureStay, newBooking, stayAfter } from '../../src/data/factories.ts';
+import { futureStay, newBooking, newGuestBooking, stayAfter } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('POST /ui-api/booking', () => {
@@ -49,7 +49,7 @@ test.describe('POST /ui-api/booking', () => {
   }) => {
     const stay = futureStay(3);
     const first = await createBooking(newBooking(room.roomid, stay));
-    const clash = newBooking(room.roomid, stay);
+    const clash = newGuestBooking(room.roomid, stay);
 
     const failure = await createBooking(clash).then(
       () => 'created',
@@ -138,7 +138,7 @@ test.describe('POST /ui-api/booking', () => {
       // the booking is stored, and the UI API's retry is refused as a clash
       const domain = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.example.com`;
       const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
-      const booking = { ...newBooking(room.roomid, futureStay()), email };
+      const booking = { ...newGuestBooking(room.roomid, futureStay()), email };
 
       const response = await bookingApi.create(booking);
 

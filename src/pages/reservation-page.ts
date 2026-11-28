@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { NewBooking } from '../api/booking-api.ts';
+import type { GuestBooking } from '../api/booking-api.ts';
 import type { Stay } from '../api/room-api.ts';
 
 /** A room's reservation page at /reservation/{roomid}. */
@@ -31,7 +31,7 @@ export class ReservationPage {
   }
 
   /** The first "Reserve Now" only opens the guest form; the second submits it. */
-  async reserve({ firstname, lastname, email, phone }: NewBooking): Promise<void> {
+  async reserve({ firstname, lastname, email, phone }: GuestBooking): Promise<void> {
     await this.reserveNow.click();
     await this.firstname.fill(firstname);
     await this.lastname.fill(lastname);

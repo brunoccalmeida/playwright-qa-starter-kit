@@ -13,16 +13,22 @@ export const bookingSchema = z.object({
 });
 export const bookingListSchema = z.object({ bookings: z.array(bookingSchema) });
 
-/** What POST /ui-api/booking takes; email and phone are not echoed back. */
+/**
+ * What POST /ui-api/booking takes; email and phone are not echoed back. With
+ * both, the app also sends the guest's message to the message service.
+ */
 export type NewBooking = {
   roomid: number;
   firstname: string;
   lastname: string;
   depositpaid: boolean;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   bookingdates: Stay;
 };
+
+/** A booking with the contact details the reservation form requires. */
+export type GuestBooking = NewBooking & { email: string; phone: string };
 
 /** Client for /ui-api/booking. Creating is public; reading needs the admin token. */
 export class BookingApi {
