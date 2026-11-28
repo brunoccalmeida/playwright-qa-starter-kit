@@ -14,6 +14,7 @@ export const knownIssueTitles = {
   'KI-5': 'form fields without associated labels',
   'KI-6': 'availability ignores partially overlapping bookings',
   'KI-7': 'unknown room id returns 500',
+  'KI-8': 'a stored booking is refused with 409',
 } as const;
 
 export type KnownIssueId = keyof typeof knownIssueTitles;

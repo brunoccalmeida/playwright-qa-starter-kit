@@ -69,7 +69,7 @@ test.describe('POST /ui-api/booking', () => {
     expect(failure).not.toContain(adminToken);
   });
 
-  // The app can store a booking and still answer 409 (#54): this mark tells
+  // The app can store a booking and still answer 409 (KI-8): this mark tells
   // that case apart from a clash with someone else's booking
   test('marks a booking the room already holds for the refused guest', async ({
     createBooking,
@@ -128,6 +128,37 @@ test.describe('POST /ui-api/booking', () => {
       expect.arrayContaining(['size must be between 3 and 30', 'size must be between 3 and 18']),
     );
   });
+
+  test.fail(
+    'does not refuse a booking it stored',
+    knownIssue('KI-8'),
+    async ({ bookingApi, room, adminToken }) => {
+      // Valid for the booking service, one character too long for the message
+      // service's 255-character email column: the guest's message fails after
+      // the booking is stored, and the UI API's retry is refused as a clash
+      const domain = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.example.com`;
+      const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
+      const booking = { ...newBooking(room.roomid, futureStay()), email };
+
+      const response = await bookingApi.create(booking);
+
+      const listed = await bookingApi.listByRoom(room.roomid, adminToken);
+      const { bookings } = await expectJson(listed, 200, bookingListSchema);
+      const outcome = {
+        status: response.status(),
+        stored: bookings.some(({ lastname }) => lastname === booking.lastname),
+      };
+      // Accepting the address or rejecting it both fix the bug; refusing the
+      // request while keeping the booking does not
+      expect(
+        [
+          { status: 201, stored: true },
+          { status: 400, stored: false },
+        ],
+        'the response must say whether the booking was stored',
+      ).toContainEqual(outcome);
+    },
+  );
 
   test.fail(
     'rejects a check-out before the check-in with 400',
