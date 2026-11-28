@@ -45,7 +45,8 @@ type ApiFixtures = {
    * saved room that is gone after a failed test (or a known-issue test
    * that passed) fails it with an Environment: error, as `room` does:
    * the test's own error ("element not found", "Not found in a list")
-   * does not say that the environment deleted the room (#83). A test that
+   * does not say the room is gone (#83). The error names both causes, the
+   * environment and an app that did not store the room. A test that
    * deletes its own room does not call it.
    */
   deleteRoomAfterTest: (roomName: string) => () => void;
@@ -168,9 +169,15 @@ export const test = base.extend<ApiFixtures>({
     }
     // After the loop: the other rooms are still deleted
     if (vanishedRoomNames.length > 0) {
-      throw roomVanishedError(
+      // Only the save response proved the room: unlike `room`, the test
+      // never saw it stored, so the app is a possible cause too
+      throw roomMissingError(
         testInfo,
-        vanishedRoomNames.map((name) => `"${name}"`).join(', '),
+        `room ${vanishedRoomNames.map((name) => `"${name}"`).join(', ')} was not found after ` +
+          `the test, although the app had confirmed its save. Either something outside the ` +
+          `test deleted it (the shared environment's room reset, which restarts ids at 1, or ` +
+          `another user), or the app answered success without storing it. A reset rarely ` +
+          `hits the same test twice; an app that does not store rooms fails it on every run.`,
         rooms,
       );
     }
@@ -195,9 +202,12 @@ export const test = base.extend<ApiFixtures>({
     // marked saved there: one error per vanished room.
     const after = await expectJson(await roomApi.list(), 200, roomListSchema);
     if (!after.rooms.some((r) => r.roomName === room.roomName)) {
-      throw roomVanishedError(
+      throw roomMissingError(
         testInfo,
-        `"${room.roomName}" (id ${String(created.roomid)})`,
+        `room "${room.roomName}" (id ${String(created.roomid)}), created for this test and seen ` +
+          `in the room list, was deleted during it by something outside the test: the shared ` +
+          `environment's room reset, which restarts ids at 1, or another user. If the test's ` +
+          `error involves this room, the cause is the environment, not the app.`,
         after.rooms,
       );
     }
@@ -229,12 +239,11 @@ function endedAsExpected({ status, expectedStatus }: TestInfo): boolean {
 }
 
 /**
- * The error for a test whose room, created for it, something outside the
- * test deleted: the shared environment is the likely cause, and the test's
- * own error ("element not found", 404, or an unexpected pass) does not say
- * so (#65, #83).
+ * The error for a test whose room, created for it, is gone: the test's own
+ * error ("element not found", 404, or an unexpected pass) does not say so
+ * (#65, #83). `finding` states what is known and the possible causes.
  */
-function roomVanishedError(testInfo: TestInfo, room: string, roomsNow: Room[]): Error {
+function roomMissingError(testInfo: TestInfo, finding: string, roomsNow: Room[]): Error {
   // In a test.fail() test, this error and the failure the missing room
   // caused would count as the known bug: expect a pass instead, so the
   // test is reported as failed (#78). The outcome compares status with
@@ -244,10 +253,7 @@ function roomVanishedError(testInfo: TestInfo, room: string, roomsNow: Room[]): 
   testInfo.expectedStatus = 'passed';
   const ids = roomsNow.map((r) => r.roomid).join(', ');
   return new Error(
-    `Environment: room ${room}, created for this test, ` +
-      `was deleted during it by something outside the test: the shared environment's room reset, ` +
-      `which restarts ids at 1, or another user. Room ids now: ${ids}. ` +
-      `If the test's error involves this room, the cause is the environment, not the app. ` +
+    `Environment: ${finding} Room ids now: ${ids}. ` +
       `See "Test environment limit" in docs/KNOWN_ISSUES.md.`,
   );
 }
