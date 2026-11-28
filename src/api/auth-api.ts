@@ -30,4 +30,13 @@ export class AuthApi {
   logout(token: string): Promise<APIResponse> {
     return this.request.post('/ui-api/auth/logout', { data: { token } });
   }
+
+  /**
+   * The auth service's own logout, behind the /api/auth proxy: it deletes
+   * this token only. Used to invalidate a token, which the UI API's logout
+   * does not do (KI-3).
+   */
+  serviceLogout(token: string): Promise<APIResponse> {
+    return this.request.post('/api/auth/logout', { data: { token } });
+  }
 }

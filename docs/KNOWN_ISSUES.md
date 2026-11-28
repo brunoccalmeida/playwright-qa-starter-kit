@@ -67,6 +67,15 @@ Issues are numbered in the order they were found.
 - **Impact:** the guest is told the room is taken while the booking holds it, and booking again is refused too. The same happens with a normal address whenever the message service fails for a moment: the suite's booking tests were most likely refused this way in CI (the stored booking had exactly the requested dates) ([#54](https://github.com/brunoccalmeida/playwright-qa-starter-kit/issues/54)).
 - **Test:** [bookings.spec.ts](../tests/api/bookings.spec.ts), `POST /ui-api/booking › does not refuse a booking it stored`.
 
+## KI-9: room delete with an invalidated token returns 500
+
+- **Endpoint:** `DELETE /ui-api/room/{id}`
+- **Expected:** `403`, the answer of the room service for a token the auth service does not know ([`RoomService.java`](https://github.com/mwinteringham/restful-booker-platform/blob/2069ba1c622c7327395d329eccdbe4e8ea90349f/room/src/main/java/com/automationintesting/service/RoomService.java#L66-L76)), as `POST /ui-api/auth/validate` answers for the same token.
+- **Actual:** `500 {"errors":["An unexpected error occurred"]}` for a room that exists. Observed on 2026-11-27 and 2026-11-28 after logging the token out through the auth service (`POST /api/auth/logout`; `POST /ui-api/auth/validate` then answers `403`). Without a token, the same call answers `401 {"errors":["Authentication required"]}`.
+- **Cause, read in the [application source](https://github.com/mwinteringham/restful-booker-platform):** the room service answers `403` with an empty body ([`RoomController.java`](https://github.com/mwinteringham/restful-booker-platform/blob/2069ba1c622c7327395d329eccdbe4e8ea90349f/room/src/main/java/com/automationintesting/api/RoomController.java#L49-L54)). The UI API reads the body of every error response as JSON, and parsing the empty body throws, which its `catch` turns into the `500` ([`route.ts`](https://github.com/mwinteringham/restful-booker-platform/blob/2069ba1c622c7327395d329eccdbe4e8ea90349f/assets/src/app/ui-api/room/%5Bid%5D/route.ts#L56-L71)).
+- **Impact:** a client cannot tell an expired session from a server failure ([RFC 9110, 500 Internal Server Error](https://www.rfc-editor.org/rfc/rfc9110#section-15.6.1)), so it cannot react by logging in again.
+- **Test:** [rooms.spec.ts](../tests/api/rooms.spec.ts), `DELETE /ui-api/room/{id} › rejects an invalidated token with 403`.
+
 ## Test environment limit: rooms and bookings reset independently
 
 This is a limit of the shared environment, not a numbered defect: no test asserts it.

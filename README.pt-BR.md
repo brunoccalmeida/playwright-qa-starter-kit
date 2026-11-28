@@ -15,8 +15,8 @@ O app alvo é o [Restful Booker Platform](https://automationintesting.online), u
 
 ## Visão geral
 
-- **Testes:** 35 de API · 10 E2E, cada E2E no Chromium e no Firefox, contra um ambiente real compartilhado com outros testers
-- **Defeitos encontrados e acompanhados:** 7 abertos no app testado, [documentados](docs/KNOWN_ISSUES.md) e cada um afirmado por um teste que avisa quando o defeito é corrigido; mais 1 [já corrigido pelo app e detectado pela suíte](docs/KNOWN_ISSUES.md#resolved-issues)
+- **Testes:** 36 de API · 10 E2E, cada E2E no Chromium e no Firefox, contra um ambiente real compartilhado com outros testers
+- **Defeitos encontrados e acompanhados:** 8 abertos no app testado, [documentados](docs/KNOWN_ISSUES.md) e cada um afirmado por um teste que avisa quando o defeito é corrigido; mais 1 [já corrigido pelo app e detectado pela suíte](docs/KNOWN_ISSUES.md#resolved-issues)
 - **Portões de qualidade:** a `main` só aceita pull request que passe em checagem estrita de tipos, lint, testes, auditoria de dependências (OSV-Scanner), varredura de segredos (gitleaks) e auditoria dos workflows (zizmor)
 - **Relatório ao vivo:** HTML, republicado a cada merge e toda noite: 📊 **[Ver o relatório de testes mais recente](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reaproveitável:** um [guia passo a passo](docs/ADAPTING.md) (em inglês) leva o kit para o app de um novo cliente
