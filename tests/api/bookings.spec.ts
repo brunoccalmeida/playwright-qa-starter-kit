@@ -129,7 +129,7 @@ test.describe('POST /ui-api/booking', () => {
     );
   });
 
-  test.fail(
+  test(
     'does not refuse a booking it stored',
     knownIssue('KI-8'),
     async ({ bookingApi, room, adminToken }) => {
@@ -140,6 +140,7 @@ test.describe('POST /ui-api/booking', () => {
       const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
       const booking = { ...newGuestBooking(room.roomid, futureStay()), email };
 
+      test.fail();
       const response = await bookingApi.create(booking);
 
       const listed = await bookingApi.listByRoom(room.roomid, adminToken);
@@ -160,13 +161,14 @@ test.describe('POST /ui-api/booking', () => {
     },
   );
 
-  test.fail(
+  test(
     'rejects a check-out before the check-in with 400',
     knownIssue('KI-4'),
     async ({ bookingApi, room }) => {
       const { checkin, checkout } = futureStay();
       const reversed = { checkin: checkout, checkout: checkin };
 
+      test.fail();
       const response = await bookingApi.create(newBooking(room.roomid, reversed));
 
       // The fixed response is unknown: assert only the status (not even JSON)

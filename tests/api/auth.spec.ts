@@ -57,8 +57,10 @@ test.describe('POST /ui-api/auth/logout', () => {
     expect(body.success).toBe(true);
   });
 
-  test.fail('invalidates the token', knownIssue('KI-3'), async ({ authApi, adminToken }) => {
+  test('invalidates the token', knownIssue('KI-3'), async ({ authApi, adminToken }) => {
     await expectJson(await authApi.logout(adminToken), 200, logoutResponseSchema);
+
+    test.fail();
 
     const response = await authApi.validate(adminToken);
 

@@ -28,7 +28,8 @@ function anchor(heading: string): string {
 }
 
 /**
- * Details for a test.fail() that proves a documented app bug. In the HTML
+ * Details for a test that proves a documented app bug; its body calls
+ * test.fail() right before the bug's assertions (#78). In the HTML
  * report the expected failure shows a red error with only a bare "fail"
  * annotation, which a client reads as a broken test. This adds a plain
  * sentence saying why it fails, the link to the bug's entry, and the

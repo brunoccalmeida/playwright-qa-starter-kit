@@ -43,6 +43,14 @@ type ApiFixtures = {
   deleteRoomAfterTest: (roomName: string) => void;
   /** Creates a booking the test needs; a refusal explains the state of the room. */
   createBooking: (booking: NewBooking) => ReturnType<typeof createBookingOrExplain>;
+  /**
+   * A known-issue test calls test.fail() in its body, right before the
+   * assertions that prove the bug, so a failure while arranging (session
+   * gone, room wiped) is reported as a failure, not as the bug (#78). A
+   * test tagged by knownIssue() that passes without that call would hide
+   * a forgotten marker: this fails it.
+   */
+  knownIssueMarked: undefined;
 };
 
 export const test = base.extend<ApiFixtures>({
@@ -153,20 +161,26 @@ export const test = base.extend<ApiFixtures>({
     const created = expectFound(rooms, (r) => r.roomName === room.roomName, room.roomName);
     await use(created);
     // A test that deletes its own room (e.g. the KI-7 test) is not the
-    // environment's doing; status, not expectedStatus: a test.fail() whose
-    // room vanished gets the error too, in the report only
+    // environment's doing. A test.fail() test is checked even when it
+    // passed: a vanished room can make the bug's assertion pass too
     if (
-      testInfo.status === 'passed' ||
+      (testInfo.status === 'passed' && testInfo.expectedStatus === 'passed') ||
       testInfo.status === 'skipped' ||
       roomApi.hasDeleted(created.roomid)
     ) {
       return;
     }
-    // A failed test whose room vanished: the shared environment is the
-    // likely cause, and the test's own error ("element not found", 404)
-    // does not say so (#65). This teardown runs before deleteRoomAfterTest's.
+    // A test whose room vanished: the shared environment is the likely
+    // cause, and the test's own error ("element not found", 404, or an
+    // unexpected pass) does not say so (#65). This teardown runs before
+    // deleteRoomAfterTest's.
     const after = await expectJson(await roomApi.list(), 200, roomListSchema);
     if (!after.rooms.some((r) => r.roomName === room.roomName)) {
+      // In a test.fail() test, this error and the failure the missing room
+      // caused would count as the known bug: expect a pass instead, so the
+      // test is reported as failed (#78). The outcome compares status with
+      // expectedStatus when the test ends (read in Playwright 1.65.1).
+      testInfo.expectedStatus = 'passed';
       const ids = after.rooms.map((r) => r.roomid).join(', ');
       throw new Error(
         `Environment: room "${room.roomName}" (id ${String(created.roomid)}), created for this test, ` +
@@ -180,6 +194,22 @@ export const test = base.extend<ApiFixtures>({
   createBooking: async ({ bookingApi, adminToken }, use) => {
     await use((booking) => createBookingOrExplain(bookingApi, booking, adminToken));
   },
+  knownIssueMarked: [
+    async ({}, use, testInfo) => {
+      await use(undefined);
+      if (
+        testInfo.tags.includes('@known-issue') &&
+        testInfo.status === 'passed' &&
+        !testInfo.annotations.some(({ type }) => type === 'fail')
+      ) {
+        throw new Error(
+          'This known-issue test passed without calling test.fail(): call it in the body, ' +
+            'right before the assertions that prove the bug.',
+        );
+      }
+    },
+    { auto: true },
+  ],
 });
 
 export { expect } from '@playwright/test';
