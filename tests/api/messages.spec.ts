@@ -46,9 +46,10 @@ test.describe('GET /ui-api/message', () => {
     );
   });
 
-  test.fail('requires authentication', knownIssue('KI-2'), async ({ messageApi }) => {
+  test('requires authentication', knownIssue('KI-2'), async ({ messageApi }) => {
     const response = await messageApi.list();
 
+    test.fail();
     // The fixed response is unknown: assert only the status (not even JSON)
     await expectStatus(response, 401);
   });

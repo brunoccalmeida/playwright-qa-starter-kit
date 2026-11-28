@@ -27,7 +27,7 @@ test.describe('GET /ui-api/room', () => {
     expect(free.rooms.map((r) => r.roomid)).toContain(room.roomid);
   });
 
-  test.fail(
+  test(
     'leaves out a room booked for part of the requested dates',
     knownIssue('KI-6'),
     async ({ roomApi, createBooking, room }) => {
@@ -38,6 +38,7 @@ test.describe('GET /ui-api/room', () => {
       const overlapping = stayAfter(stay, -1);
       const { rooms } = await expectJson(await roomApi.list(overlapping), 200, roomListSchema);
 
+      test.fail();
       expect(rooms.map((r) => r.roomid)).not.toContain(room.roomid);
     },
   );
@@ -109,16 +110,13 @@ test.describe('DELETE /ui-api/room/{id}', () => {
     expect(body.errors).toEqual(['Authentication required']);
   });
 
-  test.fail(
-    'a deleted room is not found',
-    knownIssue('KI-7'),
-    async ({ roomApi, adminToken, room }) => {
-      // The 500 takes about 31 s (part of KI-7). Without the extra time the
-      // test would time out, a failure that proves nothing about the bug.
-      test.slow();
-      await expectJson(await roomApi.delete(room.roomid, adminToken), 200, successSchema);
+  test('a deleted room is not found', knownIssue('KI-7'), async ({ roomApi, adminToken, room }) => {
+    // The 500 takes about 31 s (part of KI-7). Without the extra time the
+    // test would time out, a failure that proves nothing about the bug.
+    test.slow();
+    await expectJson(await roomApi.delete(room.roomid, adminToken), 200, successSchema);
 
-      await expectStatus(await roomApi.get(room.roomid), 404);
-    },
-  );
+    test.fail();
+    await expectStatus(await roomApi.get(room.roomid), 404);
+  });
 });

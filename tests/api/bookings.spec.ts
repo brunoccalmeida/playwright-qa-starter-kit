@@ -129,7 +129,7 @@ test.describe('POST /ui-api/booking', () => {
     );
   });
 
-  test.fail(
+  test(
     'does not refuse a booking it stored',
     knownIssue('KI-8'),
     async ({ bookingApi, room, adminToken }) => {
@@ -148,6 +148,7 @@ test.describe('POST /ui-api/booking', () => {
         status: response.status(),
         stored: bookings.some(({ lastname }) => lastname === booking.lastname),
       };
+      test.fail();
       // Accepting the address or rejecting it both fix the bug; refusing the
       // request while keeping the booking does not
       expect(
@@ -160,7 +161,7 @@ test.describe('POST /ui-api/booking', () => {
     },
   );
 
-  test.fail(
+  test(
     'rejects a check-out before the check-in with 400',
     knownIssue('KI-4'),
     async ({ bookingApi, room }) => {
@@ -169,6 +170,7 @@ test.describe('POST /ui-api/booking', () => {
 
       const response = await bookingApi.create(newBooking(room.roomid, reversed));
 
+      test.fail();
       // The fixed response is unknown: assert only the status (not even JSON)
       await expectStatus(response, 400);
     },

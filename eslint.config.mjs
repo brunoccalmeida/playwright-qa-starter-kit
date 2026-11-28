@@ -39,6 +39,14 @@ export default defineConfig(
           message:
             'This message is the step title even on success: use a constant, or expectJson/expectStatus (body only on failure).',
         })),
+        // test.fail(title, body) expects a failure from the first line, so
+        // an error while arranging (an environment reset) counts as the
+        // known bug (#78).
+        {
+          selector: "CallExpression[callee.property.name='fail'] > :function",
+          message:
+            'Declare a known-issue test with test(title, knownIssue(id), body) and call test.fail() in the body, right before the assertions that prove the bug.',
+        },
       ],
     },
   },

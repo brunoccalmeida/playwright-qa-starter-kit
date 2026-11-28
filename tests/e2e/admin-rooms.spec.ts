@@ -40,12 +40,13 @@ test.describe('Admin rooms', () => {
     });
   });
 
-  test.fail(
+  test(
     'the create-room fields are found by their labels',
     knownIssue('KI-5'),
     async ({ adminRoomsPage, page }) => {
       await adminRoomsPage.goto();
 
+      test.fail();
       // Assumes the fix labels each field with its column header. A fix
       // with other texts, or of only some fields, keeps this test failing:
       // check the form whenever KI-5 is reported fixed.

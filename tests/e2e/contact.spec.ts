@@ -24,12 +24,13 @@ test.describe('Contact form', () => {
     expect(received.subject).toBe(message.subject);
   });
 
-  test.fail(
+  test(
     'the message field is found by its label',
     knownIssue('KI-5'),
     async ({ homePage, page }) => {
       await homePage.goto();
 
+      test.fail();
       await expect(page.getByLabel('Message', { exact: true })).toBeVisible();
     },
   );
