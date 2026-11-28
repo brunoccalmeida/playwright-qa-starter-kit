@@ -21,10 +21,11 @@ test.describe('Admin rooms', () => {
   }) => {
     const room = newRoom();
     // Before the UI creates it: a failure after the save still cleans up
-    deleteRoomAfterTest(room.roomName);
+    const roomSaved = deleteRoomAfterTest(room.roomName);
 
     await adminRoomsPage.goto();
     await adminRoomsPage.createRoom(room);
+    roomSaved();
 
     const listing = adminRoomsPage.listing(room.roomName);
     // Whole cells: a substring of the row could also match the random name

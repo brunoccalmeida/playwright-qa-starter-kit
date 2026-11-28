@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { roomListSchema, type NewRoom } from '../api/room-api.ts';
+import { successSchema } from '../api/schemas.ts';
 
 /** Room management at /admin/rooms (requires an admin session). */
 export class AdminRoomsPage {
@@ -75,6 +76,9 @@ export class AdminRoomsPage {
    * found by their `id`, the attribute a fixed `<label for>` would point
    * to. A positional locator (the n-th combobox) would break silently if
    * the columns were reordered.
+   *
+   * Returns only once the app answered that it saved the room: what the
+   * form shows after the click does not prove the save.
    */
   async createRoom({ roomName, type, accessible, roomPrice, features }: NewRoom): Promise<void> {
     await this.page.getByTestId('roomName').fill(roomName);
@@ -84,6 +88,21 @@ export class AdminRoomsPage {
     for (const feature of features) {
       await this.page.getByRole('checkbox', { name: feature, exact: true }).check();
     }
-    await this.page.getByRole('button', { name: 'Create', exact: true }).click();
+    const [response] = await Promise.all([
+      this.page.waitForResponse(
+        (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/ui-api/room',
+      ),
+      this.page.getByRole('button', { name: 'Create', exact: true }).click(),
+    ]);
+    if (response.status() !== 200) {
+      throw new Error(
+        `The save of room "${roomName}" answered HTTP ${String(response.status())}: ` +
+          `${response.url()}\nBody: ${await response.text()}`,
+      );
+    }
+    const { success } = successSchema.parse(await response.json());
+    if (!success) {
+      throw new Error(`The app did not save room "${roomName}"`);
+    }
   }
 }
