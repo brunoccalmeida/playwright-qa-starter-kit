@@ -64,10 +64,12 @@ type ApiFixtures = {
    * the app can store a booking and still answer an error (KI-8).
    *
    * It returns a function to call once the app confirmed the create (and,
-   * with email and phone, its message). Not finding a confirmed item adds a
-   * `cleanup` annotation: either the environment's reset deleted it, or the
+   * with email and phone, its message). A confirmed item not found after
+   * the test is reported: either the environment's reset deleted it, or the
    * search no longer matches what the app stores, which would otherwise
-   * leave data behind in silence. An unconfirmed item not found is the
+   * leave data behind in silence. In a test that passed it is a `cleanup`
+   * annotation; in one that did not end as expected, an Environment: error,
+   * as for a vanished room (#83). An unconfirmed item not found is the
    * normal end of a refused request, and is not reported.
    */
   deleteBookingAfterTest: (booking: NewBooking) => () => void;
@@ -235,21 +237,21 @@ export const test = base.extend<ApiFixtures>({
     }
   },
   deleteMessageAfterTest: async ({ authApi, messageApi }, use, testInfo) => {
-    // Name to whether the app confirmed it
-    const names = new Map<string, boolean>();
+    const sent: { name: string; confirmed: boolean }[] = [];
     await use((name) => {
-      names.set(name, names.get(name) ?? false);
+      const message = { name, confirmed: false };
+      sent.push(message);
       return () => {
-        names.set(name, true);
+        message.confirmed = true;
       };
     });
-    if (names.size === 0) {
+    if (sent.length === 0) {
       return;
     }
     // A login of its own: the auth reset may have invalidated the test's token (#75)
     const token = await logIn(authApi);
     const failures: string[] = [];
-    for (const [name, confirmed] of names) {
+    for (const { name, confirmed } of sent) {
       const find = async () => {
         const { messages } = await expectJson(await messageApi.list(token), 200, messageListSchema);
         return messages.filter((m) => m.name === name).map((m) => m.id);
@@ -267,21 +269,20 @@ export const test = base.extend<ApiFixtures>({
     use,
     testInfo,
   ) => {
-    // Keyed by room and guest: a test that sends the same booking twice deletes it once
-    const bookings = new Map<string, { booking: NewBooking; confirmed: boolean }>();
+    const requested: { booking: NewBooking; confirmed: boolean }[] = [];
     await use((booking) => {
-      const key = `${String(booking.roomid)} ${booking.lastname}`;
-      bookings.set(key, { booking, confirmed: bookings.get(key)?.confirmed ?? false });
+      const entry = { booking, confirmed: false };
+      requested.push(entry);
       const messageSent =
         booking.email !== undefined && booking.phone !== undefined
           ? deleteMessageAfterTest(bookingMessageName(booking))
           : undefined;
       return () => {
-        bookings.set(key, { booking, confirmed: true });
+        entry.confirmed = true;
         messageSent?.();
       };
     });
-    if (bookings.size === 0) {
+    if (requested.length === 0) {
       return;
     }
     // A login of its own: the auth reset may have invalidated the test's token (#75)
@@ -290,7 +291,7 @@ export const test = base.extend<ApiFixtures>({
     for (const {
       booking: { roomid, lastname },
       confirmed,
-    } of bookings.values()) {
+    } of requested) {
       const find = async () => {
         const listed = await expectJson(
           await bookingApi.listByRoom(roomid, token),
@@ -349,11 +350,11 @@ async function logIn(authApi: AuthApi): Promise<string> {
 /**
  * Deletes every id `find` returns and returns the failures, so one failed
  * delete does not leave the rest behind. Nothing found is reported only for
- * an item the app confirmed: for the others it is the normal end of a
- * refused request (a 409 clash, KI-8's message). That report, and a delete
- * that failed because the item was already gone, are `cleanup` annotations,
- * not failures: the shared environment's resets delete data too, and an
- * annotation does not bury the test's own error.
+ * an item the app confirmed (see `deleteBookingAfterTest`): for the others
+ * it is the normal end of a refused request (a 409 clash, KI-8's message).
+ * A delete that failed because the item was already gone is a `cleanup`
+ * annotation, not a failure: the shared environment's resets delete data
+ * too, and an annotation does not bury the test's own error.
  */
 async function deleteFoundAgain(
   testInfo: TestInfo,
@@ -364,13 +365,22 @@ async function deleteFoundAgain(
 ): Promise<string[]> {
   const ids = await find();
   if (ids.length === 0 && confirmed) {
-    testInfo.annotations.push({
-      type: 'cleanup',
-      description:
-        `${what} was confirmed by the app but not found after the test; nothing deleted. ` +
-        `Either the shared environment's reset deleted it, or the search no longer matches ` +
-        `what the app stores, and test data is being left behind.`,
-    });
+    const finding =
+      `${what} was confirmed by the app but not found after the test; nothing deleted. ` +
+      `Either the shared environment's reset deleted it, or the search no longer matches ` +
+      `what the app stores, and test data is being left behind.`;
+    if (endedAsExpected(testInfo)) {
+      testInfo.annotations.push({ type: 'cleanup', description: finding });
+      return [];
+    }
+    // As for a vanished room (#83): the missing item may have caused the
+    // test's failure, or made a known issue's assertion pass, so a test.fail()
+    // test is reported as failed instead of as the bug (#78)
+    testInfo.expectedStatus = 'passed';
+    return [
+      `Environment: ${finding} If the test's error involves this item, the cause may be the ` +
+        `environment, not the app.`,
+    ];
   }
   const failures: string[] = [];
   for (const id of ids) {
