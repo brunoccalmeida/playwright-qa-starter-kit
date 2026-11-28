@@ -140,7 +140,6 @@ test.describe('POST /ui-api/booking', () => {
       const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
       const booking = { ...newGuestBooking(room.roomid, futureStay()), email };
 
-      test.fail();
       const response = await bookingApi.create(booking);
 
       const listed = await bookingApi.listByRoom(room.roomid, adminToken);
@@ -149,6 +148,7 @@ test.describe('POST /ui-api/booking', () => {
         status: response.status(),
         stored: bookings.some(({ lastname }) => lastname === booking.lastname),
       };
+      test.fail();
       // Accepting the address or rejecting it both fix the bug; refusing the
       // request while keeping the booking does not
       expect(
@@ -168,9 +168,9 @@ test.describe('POST /ui-api/booking', () => {
       const { checkin, checkout } = futureStay();
       const reversed = { checkin: checkout, checkout: checkin };
 
-      test.fail();
       const response = await bookingApi.create(newBooking(room.roomid, reversed));
 
+      test.fail();
       // The fixed response is unknown: assert only the status (not even JSON)
       await expectStatus(response, 400);
     },

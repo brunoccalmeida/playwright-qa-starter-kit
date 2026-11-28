@@ -44,7 +44,7 @@ export function knownIssue(id: KnownIssueId): TestDetails {
     annotation: [
       {
         type: 'Known issue',
-        description: `${heading}. This test asserts the correct behaviour, so it is expected to fail until the app is fixed; the error below is the evidence of the bug.`,
+        description: `${heading}. This test asserts the correct behaviour, so it is expected to fail until the app is fixed. It expects the failure only from the assertions that prove the bug: when it fails as expected, the error below is the evidence of the bug; a failure before them, such as the login form or an Environment: error, is reported as a failed test.`,
       },
       { type: 'issue', description: `${KNOWN_ISSUES}#${anchor(heading)}` },
     ],

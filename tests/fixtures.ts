@@ -25,8 +25,9 @@ type ApiFixtures = {
    * restarts their ids and keeps the bookings, so a new room can inherit
    * old ones. Tests use random dates (`futureStay`) and never assert that
    * the room has no bookings. It is deleted after the test. If the test
-   * fails and the room is gone, the teardown adds an error naming the
-   * environment as the likely cause.
+   * fails, or a known-issue test passes, and the room is gone, the teardown
+   * adds an error naming the environment as the likely cause and reports
+   * the test as failed.
    */
   room: Room;
   /**
@@ -179,7 +180,9 @@ export const test = base.extend<ApiFixtures>({
       // In a test.fail() test, this error and the failure the missing room
       // caused would count as the known bug: expect a pass instead, so the
       // test is reported as failed (#78). The outcome compares status with
-      // expectedStatus when the test ends (read in Playwright 1.65.1).
+      // expectedStatus when the test ends (read in Playwright 1.65.1; the
+      // docs describe expectedStatus but not writing it: recheck on every
+      // Playwright update, with the room-wipe probe in #78).
       testInfo.expectedStatus = 'passed';
       const ids = after.rooms.map((r) => r.roomid).join(', ');
       throw new Error(

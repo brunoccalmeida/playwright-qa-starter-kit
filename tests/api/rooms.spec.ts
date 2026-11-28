@@ -34,11 +34,11 @@ test.describe('GET /ui-api/room', () => {
       const stay = futureStay(3);
       await createBooking(newBooking(room.roomid, stay));
 
-      test.fail();
       // Starts on the last night of the booking: POST /ui-api/booking rejects it with 409
       const overlapping = stayAfter(stay, -1);
       const { rooms } = await expectJson(await roomApi.list(overlapping), 200, roomListSchema);
 
+      test.fail();
       expect(rooms.map((r) => r.roomid)).not.toContain(room.roomid);
     },
   );

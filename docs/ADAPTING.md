@@ -95,7 +95,7 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 
 | File                             | What to change                                                                                                                                                                                           |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                                                                                                            |
+| `tests/fixtures.ts`              | Keep `authApi`, `adminToken` and `knownIssueMarked` (the guard for known-issue tests); remove the other fixtures and their imports.                                                                      |
 | `tests/e2e/fixtures.ts`          | Keep `adminTest`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports.                                                                                               |
 | `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.                                                                                                    |
 | `tests/api/auth.spec.ts`         | Remove the KI-3 test (`invalidates the token`) and the `knownIssue` import.                                                                                                                              |
