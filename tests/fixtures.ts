@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, type TestInfo } from '@playwright/test';
 import { AuthApi, tokenResponseSchema } from '../src/api/auth-api.ts';
 import { BookingApi, type NewBooking } from '../src/api/booking-api.ts';
 import { createBookingOrExplain } from '../src/api/create-booking.ts';
@@ -40,8 +40,15 @@ type ApiFixtures = {
    * the suite and become a `cleanup` annotation: the room was already gone,
    * or the auth reset invalidated the token (then one more delete with a
    * new login, which must succeed).
+   *
+   * It returns a function to call once the app confirmed the save. A
+   * saved room that is gone after a failed test (or a known-issue test
+   * that passed) fails it with an Environment: error, as `room` does:
+   * the test's own error ("element not found", "Not found in a list")
+   * does not say that the environment deleted the room (#83). A test that
+   * deletes its own room does not call it.
    */
-  deleteRoomAfterTest: (roomName: string) => void;
+  deleteRoomAfterTest: (roomName: string) => () => void;
   /** Creates a booking the test needs; a refusal explains the state of the room. */
   createBooking: (booking: NewBooking) => ReturnType<typeof createBookingOrExplain>;
   /**
@@ -77,12 +84,17 @@ export const test = base.extend<ApiFixtures>({
   },
   deleteRoomAfterTest: async ({ authApi, roomApi, adminToken }, use, testInfo) => {
     const roomNames: string[] = [];
+    const savedRoomNames = new Set<string>();
     await use((roomName) => {
       roomNames.push(roomName);
+      return () => {
+        savedRoomNames.add(roomName);
+      };
     });
     if (roomNames.length === 0) {
       return;
     }
+    const vanishedRoomNames: string[] = [];
     // Found again by name, not by the id seen during the test: the shared
     // environment can wipe rooms and reuse their ids, and only the test's
     // own room may be deleted
@@ -90,6 +102,10 @@ export const test = base.extend<ApiFixtures>({
     for (const roomName of roomNames) {
       const room = rooms.find((r) => r.roomName === roomName);
       if (room === undefined) {
+        if (savedRoomNames.has(roomName) && !endedAsExpected(testInfo)) {
+          vanishedRoomNames.push(roomName);
+          continue;
+        }
         // Not an error of the suite: the test failed before creating it, or
         // the environment wiped it. Reported, not thrown, so it does not
         // bury the test's own error.
@@ -150,6 +166,14 @@ export const test = base.extend<ApiFixtures>({
         });
       }
     }
+    // After the loop: the other rooms are still deleted
+    if (vanishedRoomNames.length > 0) {
+      throw roomVanishedError(
+        testInfo,
+        vanishedRoomNames.map((name) => `"${name}"`).join(', '),
+        rooms,
+      );
+    }
   },
   room: async ({ roomApi, adminToken, deleteRoomAfterTest }, use, testInfo) => {
     const room = newRoom();
@@ -164,33 +188,17 @@ export const test = base.extend<ApiFixtures>({
     // A test that deletes its own room (e.g. the KI-7 test) is not the
     // environment's doing. A test.fail() test is checked even when it
     // passed: a vanished room can make the bug's assertion pass too
-    if (
-      (testInfo.status === 'passed' && testInfo.expectedStatus === 'passed') ||
-      testInfo.status === 'skipped' ||
-      roomApi.hasDeleted(created.roomid)
-    ) {
+    if (endedAsExpected(testInfo) || roomApi.hasDeleted(created.roomid)) {
       return;
     }
-    // A test whose room vanished: the shared environment is the likely
-    // cause, and the test's own error ("element not found", 404, or an
-    // unexpected pass) does not say so (#65). This teardown runs before
-    // deleteRoomAfterTest's.
+    // This teardown runs before deleteRoomAfterTest's, and the room is not
+    // marked saved there: one error per vanished room.
     const after = await expectJson(await roomApi.list(), 200, roomListSchema);
     if (!after.rooms.some((r) => r.roomName === room.roomName)) {
-      // In a test.fail() test, this error and the failure the missing room
-      // caused would count as the known bug: expect a pass instead, so the
-      // test is reported as failed (#78). The outcome compares status with
-      // expectedStatus when the test ends (read in Playwright 1.65.1; the
-      // docs describe expectedStatus but not writing it: recheck on every
-      // Playwright update, with the room-wipe probe in #78).
-      testInfo.expectedStatus = 'passed';
-      const ids = after.rooms.map((r) => r.roomid).join(', ');
-      throw new Error(
-        `Environment: room "${room.roomName}" (id ${String(created.roomid)}), created for this test, ` +
-          `was deleted during it by something outside the test: the shared environment's room reset, ` +
-          `which restarts ids at 1, or another user. Room ids now: ${ids}. ` +
-          `If the test's error involves this room, the cause is the environment, not the app. ` +
-          `See "Test environment limit" in docs/KNOWN_ISSUES.md.`,
+      throw roomVanishedError(
+        testInfo,
+        `"${room.roomName}" (id ${String(created.roomid)})`,
+        after.rooms,
       );
     }
   },
@@ -214,5 +222,34 @@ export const test = base.extend<ApiFixtures>({
     { auto: true },
   ],
 });
+
+/** Passed as expected, or skipped: a vanished room did not affect the outcome. */
+function endedAsExpected({ status, expectedStatus }: TestInfo): boolean {
+  return (status === 'passed' && expectedStatus === 'passed') || status === 'skipped';
+}
+
+/**
+ * The error for a test whose room, created for it, something outside the
+ * test deleted: the shared environment is the likely cause, and the test's
+ * own error ("element not found", 404, or an unexpected pass) does not say
+ * so (#65, #83).
+ */
+function roomVanishedError(testInfo: TestInfo, room: string, roomsNow: Room[]): Error {
+  // In a test.fail() test, this error and the failure the missing room
+  // caused would count as the known bug: expect a pass instead, so the
+  // test is reported as failed (#78). The outcome compares status with
+  // expectedStatus when the test ends (read in Playwright 1.65.1; the
+  // docs describe expectedStatus but not writing it: recheck on every
+  // Playwright update, with the room-wipe probe in #78).
+  testInfo.expectedStatus = 'passed';
+  const ids = roomsNow.map((r) => r.roomid).join(', ');
+  return new Error(
+    `Environment: room ${room}, created for this test, ` +
+      `was deleted during it by something outside the test: the shared environment's room reset, ` +
+      `which restarts ids at 1, or another user. Room ids now: ${ids}. ` +
+      `If the test's error involves this room, the cause is the environment, not the app. ` +
+      `See "Test environment limit" in docs/KNOWN_ISSUES.md.`,
+  );
+}
 
 export { expect } from '@playwright/test';
