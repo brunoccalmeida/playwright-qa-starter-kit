@@ -2,7 +2,7 @@
 
 # Instruções de revisão
 
-Verificações específicas deste kit para o revisor (`mission:reviewer` e o [Code Review](https://code.claude.com/docs/en/code-review-customize.md) da Anthropic, que lê este arquivo na raiz), somadas à lista genérica dele. As regras gerais estão em [.github/copilot-instructions.md](.github/copilot-instructions.md).
+Verificações específicas deste kit para o revisor (`mission:reviewer` e o [Code Review](https://code.claude.com/docs/en/code-review-customize.md) da Anthropic, que lê este arquivo na raiz), somadas à lista genérica dele. As regras gerais estão em [CLAUDE.md](CLAUDE.md) e em [.claude/rules/core.md](.claude/rules/core.md).
 
 ## Sempre verificar
 

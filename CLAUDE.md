@@ -2,20 +2,81 @@
 
 # CLAUDE.md
 
-As regras do projeto ficam em um único lugar, compartilhado com o GitHub Copilot:
-
-@.github/copilot-instructions.md
-
-As regras que valem para todo projeto estão em [`.claude/rules/core.md`](.claude/rules/core.md), que vem do [automation-template](https://github.com/brunoccalmeida/automation-template) (versão em `.copier-answers.yml`) e não é editado aqui. Onde as duas divergem, vale a exceção abaixo.
+Regras deste projeto: só o que as regras de todo projeto não dizem. Essas estão em [`.claude/rules/core.md`](.claude/rules/core.md), que vem do [automation-template](https://github.com/brunoccalmeida/automation-template) (versão em `.copier-answers.yml`) e não é editado aqui. Onde as duas divergem, vale a exceção abaixo.
 
 Estado do projeto e próxima missão: [docs/PROJECT_SESSION_SUMMARY.md](docs/PROJECT_SESSION_SUMMARY.md)
+
+## O que é este projeto
+
+Kit reaproveitável de automação de QA para clientes: Playwright + TypeScript, testes E2E e de API, CI no GitHub Actions e relatório HTML publicado. O app alvo é o [Restful Booker Platform](https://automationintesting.online), um **ambiente compartilhado** (outros testers usam ao mesmo tempo) e com **bugs conhecidos** (`docs/KNOWN_ISSUES.md`).
+
+O app alvo é de terceiros: no caminho "test first" do core, o teste nasce antes do cliente de API, do Page Object ou da fixture que ele usa.
+
+## Contratos e missões
+
+Contratos do plugin `mission` ([formato](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md)); a primeira coluna é o nome que as skills procuram:
+
+| Contrato          | Valor                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `check`           | `npm run check`                                                                                                  |
+| `test`            | `npm test` (API + E2E, a suíte do CI); antes: `cp .env.example .env` e `npx playwright install chromium firefox` |
+| `smoke`           | `npm run smoke` (os testes `@smoke`: o app alvo responde, na API e no navegador)                                 |
+| `main-branch`     | `main`                                                                                                           |
+| `gate`            | `ci-passed`                                                                                                      |
+| `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md`                                                                                |
+
+- Prioridade das issues pelas labels `priority: P0/P1/P2`.
+- Revisões específicas do projeto ficam em [REVIEW.md](REVIEW.md).
+- Antes de commitar: `check` verde.
+- Merge em squash, pelo usuário com `/mission:ship-pr` (liga o auto-merge).
+
+## Testes com Playwright
+
+**Hierarquia:** API (contrato e regras de negócio, rápidos) · E2E (jornadas de usuário no navegador). Cobertura de regra vai para a API; E2E cobre só o que precisa do navegador.
+
+- **Isolamento:** cada teste cria os próprios dados, únicos (datas aleatórias no futuro, nomes com sufixo), e não depende de ordem nem de dados de outro teste. O ambiente é compartilhado: nunca presuma estado prévio nem apague o que não criou.
+- **Localizadores voltados ao usuário:** `getByRole`, `getByLabel`, `getByText`; `getByTestId` só quando não há alternativa acessível (registre o porquê). Nada de CSS/XPath frágil. `getByRole` casa por substring sem diferenciar maiúsculas: use `exact: true` quando houver ambiguidade.
+- **Bug conhecido do app:** `test(título, knownIssue('KI-n'), corpo)` com `test.fail()` no corpo, logo antes das asserções que provam o bug, nunca `skip`: assim uma falha ao preparar (sessão ou quarto apagados pelo reset do ambiente) reprova o teste em vez de contar como o bug (#78). O lint barra a forma `test.fail(título, corpo)`, e um teste com `knownIssue` que passa sem chamar `test.fail()` é reprovado; KI novo entra em `docs/KNOWN_ISSUES.md` e no mapa de `tests/known-issues.ts` (título idêntico ao cabeçalho, que gera o link). Quando o bug for corrigido, o teste passa a "falhar" e avisa. Antes de marcar, rode sem o `test.fail()` e confirme que falha **pelo motivo do bug**: `test.fail()` aceita qualquer falha, inclusive um erro no próprio teste.
+- **Configuração** (URL, credenciais) vem de variáveis de ambiente validadas na inicialização; nunca no código.
+
+## Espere o estado ficar pronto antes de agir
+
+A regra geral está no core; no Playwright, as armadilhas são estas:
+
+| Contexto             | Armadilha                                                         | Como esperar corretamente                                                           |
+| -------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Asserção na UI       | `expect(await loc.textContent()).toBe(x)` lê uma vez, cedo demais | Asserção web-first: `await expect(loc).toHaveText(x)` (tenta até o timeout)         |
+| Navegação em SPA     | A URL muda antes de o conteúdo renderizar                         | Esperar um elemento do destino, não só `toHaveURL`                                  |
+| Ação que dispara API | A UI otimista aparece antes de a resposta chegar                  | `page.waitForResponse` registrado **antes** da ação, ou asserção no resultado final |
+
+## Diagnóstico de erros
+
+O método está no core. Aqui:
+
+- **Observe** também o trace (`npx playwright show-trace`) e o screenshot.
+- **Causa raiz:** bug do teste, do app (vai para `docs/KNOWN_ISSUES.md`) ou do ambiente compartilhado?
+- **Valide** uma falha intermitente com `--repeat-each`.
+- **Flaky** (falhou e passou no mesmo commit; no CI o run fica vermelho): siga [docs/FLAKY_TESTS.md](docs/FLAKY_TESTS.md). Em teste que o PR criou ou alterou, corrija no próprio PR; nos demais, abra a issue antes do re-run e trate em missão própria.
 
 ## Idioma
 
 Documentation language: English
 
-Vale para o README principal, `docs/` e os entregáveis para o cliente (ex.: `docs/KNOWN_ISSUES.md`). Código e commits ficam em inglês pelo core; issues e PRs também, pela seção "Comunicação".
+- Em **inglês**: código, commits, issues, PRs, o README principal, `docs/` e os **entregáveis de QA para o cliente** (ex.: `docs/KNOWN_ISSUES.md`). O critério é quem lê: o que vai para o cliente segue o idioma do código.
+- Em **português (Brasil)**: a conversa e a documentação interna (ver a exceção abaixo).
+- Explicar o **porquê**, não só o quê; opiniões fundamentadas, não só concordância.
+
+## Dependências e segurança
+
+- npm com `package-lock.json` commitado; versões fixadas exatas (`--save-exact`). Node fixado em `.node-version`.
+- Travas do agente em `.claude/settings.json`, que vem do template (`permissions.deny`): merge `--admin`, force push e leitura do `.env` (deny de `Read` também barra Edit e Write). Push na `main` fica com o ruleset do GitHub, e não com uma trava local: o template a removeu de propósito ([ADR 0010](https://github.com/brunoccalmeida/automation-template/blob/v1.0.0/docs/adr/0010-claude-code-enforcement-in-the-core.md)). Trava nova vai para o template; vale para `Bash(...)` **e** `PowerShell(...)` e só entra provada por sonda. Elas casam o texto do comando, não são fronteira de segurança (`git -C` e `bash -c` escapam): a fronteira é o ruleset da `main` no GitHub.
+- Vulnerabilidade em dependência transitiva: `overrides` para a versão corrigida, nunca `npm audit fix --force` que rebaixa versão maior. Sem correção publicada: exceção com prazo no `osv-scanner.toml`, com as regras do próprio arquivo.
+- Versão maior é decisão humana: ler as notas de versão e medir o impacto antes de atualizar. Conferir _peer dependencies_ (ex.: `typescript-eslint` limita a versão do TypeScript).
+
+## Princípios
+
+Explícito é melhor que implícito; simples é melhor que complexo; legibilidade conta; erros nunca passam em silêncio; diante da ambiguidade, recuse a tentação de adivinhar.
 
 ## Exceções ao core
 
-- **"documentation is in the language set by `Documentation language:`"** (Engineering defaults): a documentação interna fica em português (Brasil): as regras (este arquivo, `.github/copilot-instructions.md`, `REVIEW.md`), o resumo de sessão e a tradução `README.pt-BR.md`. Motivo: o critério é quem lê; quem lê a documentação interna é o dono do projeto, que trabalha em pt-BR, e o que vai para o cliente segue o idioma do código.
+- **"documentation is in the language set by `Documentation language:`"** (Engineering defaults): a documentação interna fica em português (Brasil): as regras (este arquivo e `REVIEW.md`), o resumo de sessão e a tradução `README.pt-BR.md`. Motivo: o critério é quem lê; quem lê a documentação interna é o dono do projeto, que trabalha em pt-BR, e o que vai para o cliente segue o idioma do código.
