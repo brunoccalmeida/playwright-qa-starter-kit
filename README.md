@@ -13,10 +13,10 @@ The target application is the [Restful Booker Platform](https://automationintest
 
 ## At a Glance
 
-<!-- Counts are updated by hand when the number of tests changes (`npx playwright test --list`); README.pt-BR.md follows. The published report is the source of truth. -->
+<!-- The numbers below are checked against the suite and docs/KNOWN_ISSUES.md by scripts/check-readme-numbers.ts (`npm run check`), here and in README.pt-BR.md. -->
 
-- **Tests:** 29 API · 9 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
-- **Defects found and tracked:** 6 in the application under test, [documented](docs/KNOWN_ISSUES.md) and each asserted by a test that signals when the defect is fixed
+- **Tests:** 35 API · 10 E2E, each E2E test on Chromium and on Firefox, against a live environment shared with other testers
+- **Defects found and tracked:** 7 open in the application under test, [documented](docs/KNOWN_ISSUES.md) and each asserted by a test that signals when the defect is fixed; 1 more [already fixed by the application and detected by the suite](docs/KNOWN_ISSUES.md#resolved-issues)
 - **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, a dependency audit (OSV-Scanner), secret scanning (gitleaks) and a workflow audit (zizmor)
 - **Live report:** HTML, republished on every merge and every night: 📊 **[View the latest test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reusable:** a [step-by-step guide](docs/ADAPTING.md) takes the kit to a new client application
