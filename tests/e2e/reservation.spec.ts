@@ -1,6 +1,6 @@
 import { bookingListSchema } from '../../src/api/booking-api.ts';
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
-import { futureStay, newBooking } from '../../src/data/factories.ts';
+import { futureStay, newGuestBooking } from '../../src/data/factories.ts';
 import { expect, test } from './fixtures.ts';
 
 test.describe('Room reservation', () => {
@@ -10,7 +10,7 @@ test.describe('Room reservation', () => {
     bookingApi,
     adminToken,
   }) => {
-    const booking = newBooking(room.roomid, futureStay());
+    const booking = newGuestBooking(room.roomid, futureStay());
 
     await reservationPage.goto(room.roomid, booking.bookingdates);
     await reservationPage.reserve(booking);

@@ -1,4 +1,4 @@
-import type { NewBooking } from '../api/booking-api.ts';
+import type { GuestBooking, NewBooking } from '../api/booking-api.ts';
 import type { NewMessage } from '../api/message-api.ts';
 import type { NewRoom, Stay } from '../api/room-api.ts';
 
@@ -49,15 +49,27 @@ export function newRoom(): NewRoom {
   };
 }
 
+/**
+ * A booking without email and phone, so the app does not call its message
+ * service: a failure there makes the app refuse a booking it stored (KI-8,
+ * #54), and only the tests about that path should depend on it.
+ */
 export function newBooking(roomid: number, bookingdates: Stay): NewBooking {
   return {
     roomid,
     firstname: 'Ana',
     lastname: `QA-${uniqueSuffix()}`,
     depositpaid: false,
+    bookingdates,
+  };
+}
+
+/** A booking with email and phone, as a guest sends it from the reservation form. */
+export function newGuestBooking(roomid: number, bookingdates: Stay): GuestBooking {
+  return {
+    ...newBooking(roomid, bookingdates),
     email: 'ana.qa@example.com',
     phone: '01234567890',
-    bookingdates,
   };
 }
 
