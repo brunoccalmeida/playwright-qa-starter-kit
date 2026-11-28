@@ -15,7 +15,8 @@ export const bookingListSchema = z.object({ bookings: z.array(bookingSchema) });
 
 /**
  * What POST /ui-api/booking takes; email and phone are not echoed back. With
- * both, the app also sends the guest's message to the message service.
+ * both, the app also sends the guest's message to the message service
+ * (BookingService.createBooking in the app source).
  */
 export type NewBooking = {
   roomid: number;
