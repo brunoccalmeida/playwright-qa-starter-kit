@@ -1,6 +1,8 @@
+import { tokenResponseSchema } from '../../src/api/auth-api.ts';
 import { expectFound, expectJson, expectStatus } from '../../src/api/expect-json.ts';
 import { roomListSchema, roomSchema } from '../../src/api/room-api.ts';
 import { errorListSchema, successSchema } from '../../src/api/schemas.ts';
+import { adminCredentials } from '../../src/config/env.ts';
 import { futureStay, newBooking, newRoom, stayAfter } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
@@ -110,6 +112,27 @@ test.describe('DELETE /ui-api/room/{id}', () => {
     const body = await expectJson(response, 401, errorListSchema);
     expect(body.errors).toEqual(['Authentication required']);
   });
+
+  test(
+    'rejects an invalidated token with 401 or 403',
+    knownIssue('KI-9'),
+    async ({ authApi, roomApi, room }) => {
+      // A login of its own: invalidating adminToken would also break the
+      // room's cleanup, which deletes with it
+      const { token } = await expectJson(
+        await authApi.login(adminCredentials),
+        200,
+        tokenResponseSchema,
+      );
+      await expectStatus(await authApi.serviceLogout(token), 200);
+      await expectStatus(await authApi.validate(token), 403);
+
+      test.fail();
+      // Status only, and either one: a fix that passes on the room service's
+      // empty 403, or answers 401 as without a token, must be reported
+      await expectStatus(await roomApi.delete(room.roomid, token), [401, 403]);
+    },
+  );
 
   test('a deleted room is not found', knownIssue('KI-7'), async ({ roomApi, adminToken, room }) => {
     // The 500 takes about 31 s (part of KI-7). Without the extra time the

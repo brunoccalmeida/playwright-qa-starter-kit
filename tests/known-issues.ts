@@ -15,6 +15,7 @@ export const knownIssueTitles = {
   'KI-6': 'availability ignores partially overlapping bookings',
   'KI-7': 'unknown room id returns 500',
   'KI-8': 'a stored booking is refused with 409',
+  'KI-9': 'room delete with an invalidated token returns 500',
 } as const;
 
 export type KnownIssueId = keyof typeof knownIssueTitles;
