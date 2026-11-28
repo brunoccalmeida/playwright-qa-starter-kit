@@ -1,10 +1,12 @@
 #!/bin/sh
-# Fail if a file tracked by Git is text that is not UTF-8 (#71). Run from
+# Fail if a file tracked by Git is text that is not UTF-8
+# (https://github.com/brunoccalmeida/automation-template/issues/71). Run from
 # the repository root; exit 1 lists every bad file.
 #
 # Windows PowerShell 5.1 writes UTF-16 with a byte order mark (Out-File, >),
 # which holds NUL bytes, so Git stores the file as binary: a UTF-16
-# .gitignore matched nothing in uat-automation-framework (uat#26), with no
+# .gitignore matched nothing in uat-automation-framework
+# (https://github.com/brunoccalmeida/uat-automation-framework/issues/26), with no
 # error anywhere. Git's own classification (git ls-files --eol: "-text" in
 # the index means NUL in the content) splits the two checks:
 #   - a file Git sees as text must decode as UTF-8 (iconv);
@@ -12,7 +14,8 @@
 # Known gap: UTF-16 without a byte order mark passes as binary; telling it
 # from a real binary file would take guessing.
 #
-# POSIX sh, git, iconv and od only: the core names no stack (ADR 0003), and
+# POSIX sh, git, iconv and od only: the core names no stack
+# (https://github.com/brunoccalmeida/automation-template/blob/main/docs/adr/0003-stack-agnostic-core-defines-contracts.md), and
 # Git Bash on Windows has all of them.
 
 for tool in git iconv od; do

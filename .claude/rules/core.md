@@ -118,5 +118,8 @@ reason, and prevention.
   APIs, files, network). There, fail with a message that names the cause; never swallow
   an error with an empty catch or a fallback that hides it. Why: a hidden failure
   surfaces later, far from its cause, while the tests stay green.
-- Everything written to the repository is in English. Why: it is a public portfolio, and
-  English is the industry standard for code and documentation.
+- Code (identifiers, comments, test names) and commit messages are in English; documentation
+  is in the language set by `Documentation language:` in the project's `CLAUDE.md`, English
+  when it sets none. Why: English is the one language nearly all programmers can read, so
+  the code stays open to whoever maintains it next; documentation is read by the project's
+  audience, who may read another language.
