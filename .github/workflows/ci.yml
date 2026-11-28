@@ -132,8 +132,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The browser projects depend on setup, which logs in and saves the
-      # admin session; same secrets and the same reason as the api job.
+      # The admin tests log in through the API (adminTest); same secrets
+      # and the same reason as the api job.
       - name: Run E2E tests
         run: npm run test:e2e
         env:

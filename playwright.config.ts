@@ -38,24 +38,17 @@ export default defineConfig({
   },
   projects: [
     { name: 'api', testDir: './tests/api' },
-    // Logs in once and saves the admin session (playwright.dev/docs/auth).
-    // The session is a cookie, valid in any browser: one login for both.
-    {
-      name: 'setup',
-      testDir: './tests/e2e',
-      testMatch: /.*\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    },
+    // No setup project: each admin test logs in on its own (adminTest in
+    // tests/e2e/fixtures.ts), because the environment's auth reset
+    // invalidates a session saved once per run (#70).
     {
       name: 'chromium',
       testDir: './tests/e2e',
-      dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
       testDir: './tests/e2e',
-      dependencies: ['setup'],
       use: { ...devices['Desktop Firefox'] },
     },
   ],

@@ -96,7 +96,7 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 | File                             | What to change                                                                                                                                                                                           |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                                                                                                            |
-| `tests/e2e/fixtures.ts`          | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports.                                                                                           |
+| `tests/e2e/fixtures.ts`          | Keep `adminTest`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports.                                                                                               |
 | `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.                                                                                                    |
 | `tests/api/auth.spec.ts`         | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                                                                                                             |
 | `tests/known-issues.ts`          | Empty the map: `export const knownIssueTitles = {} as const;`                                                                                                                                            |
@@ -111,12 +111,12 @@ These parts carry over without changes: [expect-json.ts](../src/api/expect-json.
 
 **Explore before you code.** Map the API with the application's documentation or the browser's network panel, and read the accessibility tree the way `getByRole` does (`npx playwright codegen`, or `ariaSnapshot()`). The demo proved why: several endpoints did not behave as a first look suggested, and each difference would have become a wrong client.
 
-**Start with the login**, because the browser projects depend on it:
+**Start with the login**, because the admin tests depend on it:
 
 1. [src/api/auth-api.ts](../src/api/auth-api.ts) and [tests/api/auth.spec.ts](../tests/api/auth.spec.ts): endpoints, contracts and error messages.
 2. [src/api/schemas.ts](../src/api/schemas.ts): the application's error formats, and how protected endpoints read the session (`authCookie`).
 3. [src/pages/admin-login-page.ts](../src/pages/admin-login-page.ts), the page after login and [tests/e2e/admin-login.spec.ts](../tests/e2e/admin-login.spec.ts), which holds the demo's error message. `expectLoaded()` must wait for something only a logged-in user sees: a URL can change before the login has been accepted.
-4. [tests/e2e/admin.setup.ts](../tests/e2e/admin.setup.ts). It logs in through the UI because the demo's login API sets no cookie. If the application's API does set it, [log in through the API](https://playwright.dev/docs/auth): it is faster.
+4. `adminTest` in [tests/e2e/fixtures.ts](../tests/e2e/fixtures.ts): it writes the session cookie the login page would write, from a fresh API login per test. Change the cookie's name to the application's. If the application's sessions are never invalidated server-side while the suite runs, a session saved once per run by a [setup project](https://playwright.dev/docs/auth) is faster; the demo's auth reset rules that out.
 
 **Then add one resource at a time:** a contract (zod schema), a typed client in `src/api/`, a fixture, and the tests. The [demo's data factories](https://github.com/brunoccalmeida/playwright-qa-starter-kit/blob/main/src/data/factories.ts) show how to build unique payloads.
 

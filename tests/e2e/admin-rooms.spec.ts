@@ -1,12 +1,10 @@
 import { expectFound, expectJson } from '../../src/api/expect-json.ts';
 import { roomListSchema } from '../../src/api/room-api.ts';
 import { newRoom } from '../../src/data/factories.ts';
-import { ADMIN_SESSION, expect, knownIssue, test } from './fixtures.ts';
-
-test.use({ storageState: ADMIN_SESSION });
+import { adminTest as test, expect, knownIssue } from './fixtures.ts';
 
 test.describe('Admin rooms', () => {
-  test('the saved session opens the room list without logging in', async ({
+  test('the admin session opens the room list without logging in', async ({
     room,
     adminRoomsPage,
   }) => {
