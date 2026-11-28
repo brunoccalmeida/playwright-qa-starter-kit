@@ -20,7 +20,7 @@ The target application is the [Restful Booker Platform](https://automationintest
 - **Quality gates:** `main` only accepts a pull request that passes strict type-checking, lint, the tests, a dependency audit (OSV-Scanner), secret scanning (gitleaks) and a workflow audit (zizmor)
 - **Live report:** HTML, republished on every merge and every night: 📊 **[View the latest test report](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reusable:** a [step-by-step guide](docs/ADAPTING.md) takes the kit to a new client application
-- **AI-assisted, same gates:** built with an AI coding agent that gets no shortcut past CI, under [written project rules](.github/copilot-instructions.md): every test was seen failing before it counted
+- **AI-assisted, same gates:** built with an AI coding agent that gets no shortcut past CI, under [written project rules](CLAUDE.md): every test was seen failing before it counted
 
 ## Reuse it for your application
 
@@ -83,7 +83,7 @@ The `core-checks` job guards the repository itself. It calls [`core-checks.yml`]
 
 Both tools are pinned to exact versions, which Dependabot does not update: the template bumps them.
 
-**AI agent guardrails:** the rules for AI coding agents live in [.github/copilot-instructions.md](.github/copilot-instructions.md), shared by Claude Code and GitHub Copilot. [.claude/settings.json](.claude/settings.json), from the template, denies the agent admin merges, force pushes and reading `.env` (a `Read` deny also blocks editing it), lists the open issues and pull requests at the start of each session, and enables the [`mission` plugin](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), which closes each mission with a Definition of Done, an independent reviewer and native auto-merge. Those rules match the text of a command, so they are a safety net and not a security boundary: the boundary is the ruleset on `main`, which has no bypass and applies to everyone.
+**AI agent guardrails:** the rules for the AI coding agent (Claude Code) live in [CLAUDE.md](CLAUDE.md), on top of the template's [core rules](.claude/rules/core.md). [.claude/settings.json](.claude/settings.json), from the template, denies the agent admin merges, force pushes and reading `.env` (a `Read` deny also blocks editing it), lists the open issues and pull requests at the start of each session, and enables the [`mission` plugin](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), which closes each mission with a Definition of Done, an independent reviewer and native auto-merge. Those rules match the text of a command, so they are a safety net and not a security boundary: the boundary is the ruleset on `main`, which has no bypass and applies to everyone.
 
 ## License
 

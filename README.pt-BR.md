@@ -20,7 +20,7 @@ O app alvo é o [Restful Booker Platform](https://automationintesting.online), u
 - **Portões de qualidade:** a `main` só aceita pull request que passe em checagem estrita de tipos, lint, testes, auditoria de dependências (OSV-Scanner), varredura de segredos (gitleaks) e auditoria dos workflows (zizmor)
 - **Relatório ao vivo:** HTML, republicado a cada merge e toda noite: 📊 **[Ver o relatório de testes mais recente](https://brunoccalmeida.github.io/playwright-qa-starter-kit/)**
 - **Reaproveitável:** um [guia passo a passo](docs/ADAPTING.md) (em inglês) leva o kit para o app de um novo cliente
-- **Feito com IA, sob os mesmos portões:** construído com um agente de código de IA que não tem atalho para furar o CI, seguindo [regras escritas do projeto](.github/copilot-instructions.md): todo teste foi visto falhando antes de valer
+- **Feito com IA, sob os mesmos portões:** construído com um agente de código de IA que não tem atalho para furar o CI, seguindo [regras escritas do projeto](CLAUDE.md): todo teste foi visto falhando antes de valer
 
 ## Reaproveite no seu app
 
@@ -83,7 +83,7 @@ O job `core-checks` protege o próprio repositório. Ele chama o [`core-checks.y
 
 As duas ferramentas estão fixadas em versões exatas, que o Dependabot não atualiza: o template as sobe.
 
-**Travas do agente de IA:** as regras para agentes de código de IA ficam em [.github/copilot-instructions.md](.github/copilot-instructions.md), compartilhadas entre Claude Code e GitHub Copilot. O [.claude/settings.json](.claude/settings.json), vindo do template, nega ao agente merge com `--admin`, force push e leitura do `.env` (um deny de `Read` também barra a edição), lista as issues e os pull requests abertos no início de cada sessão, e ativa o [plugin `mission`](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), que fecha cada missão com uma Definition of Done, um revisor independente e auto-merge nativo. Essas regras casam o texto do comando, então são uma rede de proteção e não uma fronteira de segurança: a fronteira é o ruleset da `main`, que não tem bypass e vale para todos.
+**Travas do agente de IA:** as regras para o agente de código de IA (Claude Code) ficam em [CLAUDE.md](CLAUDE.md), sobre as [regras do core](.claude/rules/core.md) do template. O [.claude/settings.json](.claude/settings.json), vindo do template, nega ao agente merge com `--admin`, force push e leitura do `.env` (um deny de `Read` também barra a edição), lista as issues e os pull requests abertos no início de cada sessão, e ativa o [plugin `mission`](https://github.com/brunoccalmeida/automation-template/blob/main/plugins/mission/README.md), que fecha cada missão com uma Definition of Done, um revisor independente e auto-merge nativo. Essas regras casam o texto do comando, então são uma rede de proteção e não uma fronteira de segurança: a fronteira é o ruleset da `main`, que não tem bypass e vale para todos.
 
 ## Licença
 
