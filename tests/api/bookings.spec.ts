@@ -21,13 +21,19 @@ test.describe('POST /ui-api/booking', () => {
     });
   });
 
-  test('rejects an overlapping booking with 409', async ({ bookingApi, createBooking, room }) => {
+  test('rejects an overlapping booking with 409', async ({
+    bookingApi,
+    createBooking,
+    deleteBookingAfterTest,
+    room,
+  }) => {
     const stay = futureStay(3);
     await createBooking(newBooking(room.roomid, stay));
 
     // Starts on the second night of the first stay
-    const overlapping = stayAfter(stay, -2);
-    const response = await bookingApi.create(newBooking(room.roomid, overlapping));
+    const overlapping = newBooking(room.roomid, stayAfter(stay, -2));
+    deleteBookingAfterTest(overlapping);
+    const response = await bookingApi.create(overlapping);
 
     const body = await expectJson(response, 409, errorSchema);
     expect(body.error).toBe('Failed to create booking');
@@ -93,6 +99,7 @@ test.describe('POST /ui-api/booking', () => {
   test('keeps the refusal and hides the token when the room cannot be listed', async ({
     request,
     createBooking,
+    deleteBookingAfterTest,
     room,
     adminToken,
   }) => {
@@ -104,12 +111,10 @@ test.describe('POST /ui-api/booking', () => {
     }
     const stay = futureStay(3);
     await createBooking(newBooking(room.roomid, stay));
+    const clash = newBooking(room.roomid, stay);
+    deleteBookingAfterTest(clash);
 
-    const failure = await createBookingOrExplain(
-      new ListingFails(request),
-      newBooking(room.roomid, stay),
-      adminToken,
-    ).then(
+    const failure = await createBookingOrExplain(new ListingFails(request), clash, adminToken).then(
       () => 'created',
       (error: unknown) => String(error),
     );
@@ -132,13 +137,14 @@ test.describe('POST /ui-api/booking', () => {
   test(
     'does not refuse a booking it stored',
     knownIssue('KI-8'),
-    async ({ bookingApi, room, adminToken }) => {
+    async ({ bookingApi, deleteBookingAfterTest, room, adminToken }) => {
       // Valid for the booking service, one character too long for the message
       // service's 255-character email column: the guest's message fails after
       // the booking is stored, and the UI API's retry is refused as a clash
       const domain = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.example.com`;
       const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
       const booking = { ...newGuestBooking(room.roomid, futureStay()), email };
+      deleteBookingAfterTest(booking);
 
       const response = await bookingApi.create(booking);
 
@@ -164,11 +170,12 @@ test.describe('POST /ui-api/booking', () => {
   test(
     'rejects a check-out before the check-in with 400',
     knownIssue('KI-4'),
-    async ({ bookingApi, room }) => {
+    async ({ bookingApi, deleteBookingAfterTest, room }) => {
       const { checkin, checkout } = futureStay();
-      const reversed = { checkin: checkout, checkout: checkin };
+      const reversed = newBooking(room.roomid, { checkin: checkout, checkout: checkin });
+      deleteBookingAfterTest(reversed);
 
-      const response = await bookingApi.create(newBooking(room.roomid, reversed));
+      const response = await bookingApi.create(reversed);
 
       test.fail();
       // The fixed response is unknown: assert only the status (not even JSON)

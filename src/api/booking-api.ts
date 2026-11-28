@@ -28,6 +28,15 @@ export type NewBooking = {
   bookingdates: Stay;
 };
 
+/**
+ * The sender name of the message that a booking with email and phone
+ * creates (subject "You have a new booking!"). Deleting the booking keeps
+ * the message.
+ */
+export function bookingMessageName({ firstname, lastname }: NewBooking): string {
+  return `${firstname} ${lastname}`;
+}
+
 /** A booking with the contact details the reservation form requires. */
 export type GuestBooking = NewBooking & { email: string; phone: string };
 
@@ -48,5 +57,11 @@ export class BookingApi {
 
   get(bookingid: number, token: string): Promise<APIResponse> {
     return this.request.get(`/ui-api/booking/${String(bookingid)}`, { headers: authCookie(token) });
+  }
+
+  delete(bookingid: number, token: string): Promise<APIResponse> {
+    return this.request.delete(`/ui-api/booking/${String(bookingid)}`, {
+      headers: authCookie(token),
+    });
   }
 }

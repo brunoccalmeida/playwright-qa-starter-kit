@@ -1,9 +1,14 @@
-import { test as base, type TestInfo } from '@playwright/test';
+import { test as base, type APIResponse, type TestInfo } from '@playwright/test';
 import { AuthApi, tokenResponseSchema } from '../src/api/auth-api.ts';
-import { BookingApi, type NewBooking } from '../src/api/booking-api.ts';
+import {
+  BookingApi,
+  bookingListSchema,
+  bookingMessageName,
+  type NewBooking,
+} from '../src/api/booking-api.ts';
 import { createBookingOrExplain } from '../src/api/create-booking.ts';
 import { expectFound, expectJson } from '../src/api/expect-json.ts';
-import { MessageApi } from '../src/api/message-api.ts';
+import { MessageApi, messageListSchema } from '../src/api/message-api.ts';
 import { RoomApi, roomListSchema, type Room } from '../src/api/room-api.ts';
 import { successSchema } from '../src/api/schemas.ts';
 import { adminCredentials } from '../src/config/env.ts';
@@ -50,6 +55,30 @@ type ApiFixtures = {
    * deletes its own room does not call it.
    */
   deleteRoomAfterTest: (roomName: string) => () => void;
+  /**
+   * Deletes the booking after the test, found again in its room by the
+   * guest's unique last name: the shared environment reuses ids, and only
+   * the test's own data may be deleted. Deleting a room keeps its bookings
+   * (probed in #66), so `room` does not cover them. A booking with email and
+   * phone also registers the message it creates. Call it before the create:
+   * the app can store a booking and still answer an error (KI-8).
+   *
+   * It returns a function to call once the app confirmed the create (and,
+   * with email and phone, its message). A confirmed item not found after
+   * the test is reported: either the environment's reset deleted it, or the
+   * search no longer matches what the app stores, which would otherwise
+   * leave data behind in silence. In a test that passed it is a `cleanup`
+   * annotation; in one that did not end as expected, an Environment: error,
+   * as for a vanished room (#83). An unconfirmed item not found is the
+   * normal end of a refused request, and is not reported.
+   */
+  deleteBookingAfterTest: (booking: NewBooking) => () => void;
+  /**
+   * Deletes the messages with this unique sender name after the test. Call
+   * it before sending; call the function it returns once the app confirmed
+   * the message (see `deleteBookingAfterTest`).
+   */
+  deleteMessageAfterTest: (name: string) => () => void;
   /** Creates a booking the test needs; a refusal explains the state of the room. */
   createBooking: (booking: NewBooking) => ReturnType<typeof createBookingOrExplain>;
   /**
@@ -76,12 +105,7 @@ export const test = base.extend<ApiFixtures>({
     await use(new MessageApi(request));
   },
   adminToken: async ({ authApi }, use) => {
-    const { token } = await expectJson(
-      await authApi.login(adminCredentials),
-      200,
-      tokenResponseSchema,
-    );
-    await use(token);
+    await use(await logIn(authApi));
   },
   deleteRoomAfterTest: async ({ authApi, roomApi, adminToken }, use, testInfo) => {
     const roomNames: string[] = [];
@@ -212,8 +236,89 @@ export const test = base.extend<ApiFixtures>({
       );
     }
   },
-  createBooking: async ({ bookingApi, adminToken }, use) => {
-    await use((booking) => createBookingOrExplain(bookingApi, booking, adminToken));
+  deleteMessageAfterTest: async ({ authApi, messageApi }, use, testInfo) => {
+    const sent: { name: string; confirmed: boolean }[] = [];
+    await use((name) => {
+      const message = { name, confirmed: false };
+      sent.push(message);
+      return () => {
+        message.confirmed = true;
+      };
+    });
+    if (sent.length === 0) {
+      return;
+    }
+    // A login of its own: the auth reset may have invalidated the test's token (#75)
+    const token = await logIn(authApi);
+    const failures: string[] = [];
+    for (const { name, confirmed } of sent) {
+      const find = async () => {
+        const { messages } = await expectJson(await messageApi.list(token), 200, messageListSchema);
+        return messages.filter((m) => m.name === name).map((m) => m.id);
+      };
+      failures.push(
+        ...(await deleteFoundAgain(testInfo, `Message from "${name}"`, confirmed, find, (id) =>
+          messageApi.delete(id, token),
+        )),
+      );
+    }
+    throwIfAny(failures);
+  },
+  deleteBookingAfterTest: async (
+    { authApi, bookingApi, deleteMessageAfterTest },
+    use,
+    testInfo,
+  ) => {
+    const requested: { booking: NewBooking; confirmed: boolean }[] = [];
+    await use((booking) => {
+      const entry = { booking, confirmed: false };
+      requested.push(entry);
+      const messageSent =
+        booking.email !== undefined && booking.phone !== undefined
+          ? deleteMessageAfterTest(bookingMessageName(booking))
+          : undefined;
+      return () => {
+        entry.confirmed = true;
+        messageSent?.();
+      };
+    });
+    if (requested.length === 0) {
+      return;
+    }
+    // A login of its own: the auth reset may have invalidated the test's token (#75)
+    const token = await logIn(authApi);
+    const failures: string[] = [];
+    for (const {
+      booking: { roomid, lastname },
+      confirmed,
+    } of requested) {
+      const find = async () => {
+        const listed = await expectJson(
+          await bookingApi.listByRoom(roomid, token),
+          200,
+          bookingListSchema,
+        );
+        return listed.bookings.filter((b) => b.lastname === lastname).map((b) => b.bookingid);
+      };
+      failures.push(
+        ...(await deleteFoundAgain(
+          testInfo,
+          `Booking of guest "${lastname}" in room ${String(roomid)}`,
+          confirmed,
+          find,
+          (id) => bookingApi.delete(id, token),
+        )),
+      );
+    }
+    throwIfAny(failures);
+  },
+  createBooking: async ({ bookingApi, adminToken, deleteBookingAfterTest }, use) => {
+    await use(async (booking) => {
+      const created = deleteBookingAfterTest(booking);
+      const body = await createBookingOrExplain(bookingApi, booking, adminToken);
+      created();
+      return body;
+    });
   },
   knownIssueMarked: [
     async ({}, use, testInfo) => {
@@ -232,6 +337,81 @@ export const test = base.extend<ApiFixtures>({
     { auto: true },
   ],
 });
+
+async function logIn(authApi: AuthApi): Promise<string> {
+  const { token } = await expectJson(
+    await authApi.login(adminCredentials),
+    200,
+    tokenResponseSchema,
+  );
+  return token;
+}
+
+/**
+ * Deletes every id `find` returns and returns the failures, so one failed
+ * delete does not leave the rest behind. Nothing found is reported only for
+ * an item the app confirmed (see `deleteBookingAfterTest`): for the others
+ * it is the normal end of a refused request (a 409 clash, KI-8's message).
+ * A delete that failed because the item was already gone is a `cleanup`
+ * annotation, not a failure: the shared environment's resets delete data
+ * too, and an annotation does not bury the test's own error.
+ */
+async function deleteFoundAgain(
+  testInfo: TestInfo,
+  what: string,
+  confirmed: boolean,
+  find: () => Promise<number[]>,
+  remove: (id: number) => Promise<APIResponse>,
+): Promise<string[]> {
+  const ids = await find();
+  if (ids.length === 0 && confirmed) {
+    const finding =
+      `${what} was confirmed by the app but not found after the test; nothing deleted. ` +
+      `Either the shared environment's reset deleted it, or the search no longer matches ` +
+      `what the app stores, and test data is being left behind.`;
+    if (endedAsExpected(testInfo)) {
+      testInfo.annotations.push({ type: 'cleanup', description: finding });
+      return [];
+    }
+    // As for a vanished room (#83): the missing item may have caused the
+    // test's failure, or made a known issue's assertion pass, so a test.fail()
+    // test is reported as failed instead of as the bug (#78)
+    testInfo.expectedStatus = 'passed';
+    return [
+      `Environment: ${finding} If the test's error involves this item, the cause may be the ` +
+        `environment, not the app.`,
+    ];
+  }
+  const failures: string[] = [];
+  for (const id of ids) {
+    const response = await remove(id);
+    const body = successSchema.safeParse(await response.json().catch(() => null));
+    if (response.status() === 200 && body.success && body.data.success) {
+      continue;
+    }
+    // The UI API answers 500 for an id that no longer exists (probed in #66)
+    if (!(await find()).includes(id)) {
+      testInfo.annotations.push({
+        type: 'cleanup',
+        description:
+          `Environment: ${what} (id ${String(id)}) was gone when its delete failed: the ` +
+          `shared environment's reset or another user deleted it. Nothing left behind.`,
+      });
+      continue;
+    }
+    failures.push(
+      `${what} (id ${String(id)}) was not deleted: HTTP ${String(response.status())}: ` +
+        `${response.url()}\nBody: ${await response.text()}`,
+    );
+  }
+  return failures;
+}
+
+function throwIfAny(failures: string[]): void {
+  if (failures.length > 0) {
+    throw new Error(failures.join('\n'));
+  }
+}
 
 /** Passed as expected, or skipped: a vanished room did not affect the outcome. */
 function endedAsExpected({ status, expectedStatus }: TestInfo): boolean {

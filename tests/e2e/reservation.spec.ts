@@ -8,14 +8,17 @@ test.describe('Room reservation', () => {
     room,
     reservationPage,
     bookingApi,
+    deleteBookingAfterTest,
     adminToken,
   }) => {
     const booking = newGuestBooking(room.roomid, futureStay());
+    const booked = deleteBookingAfterTest(booking);
 
     await reservationPage.goto(room.roomid, booking.bookingdates);
     await reservationPage.reserve(booking);
 
     await expect(reservationPage.confirmation).toBeVisible();
+    booked();
     const { checkin, checkout } = booking.bookingdates;
     await expect(reservationPage.confirmedDates).toHaveText(`${checkin} - ${checkout}`);
     const { bookings } = await expectJson(

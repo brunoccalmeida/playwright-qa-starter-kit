@@ -7,14 +7,17 @@ test.describe('Contact form', () => {
   test('a guest sends a message and the hotel receives it', async ({
     homePage,
     messageApi,
+    deleteMessageAfterTest,
     adminToken,
   }) => {
     const message = newMessage();
+    const sent = deleteMessageAfterTest(message.name);
 
     await homePage.goto();
     await homePage.sendMessage(message);
 
     await expect(homePage.contactConfirmation(message.name)).toBeVisible();
+    sent();
     const { messages } = await expectJson(
       await messageApi.list(adminToken),
       200,
