@@ -7,9 +7,11 @@ test.describe('Contact form', () => {
   test('a guest sends a message and the hotel receives it', async ({
     homePage,
     messageApi,
+    deleteMessageAfterTest,
     adminToken,
   }) => {
     const message = newMessage();
+    deleteMessageAfterTest(message.name);
 
     await homePage.goto();
     await homePage.sendMessage(message);

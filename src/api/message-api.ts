@@ -45,4 +45,8 @@ export class MessageApi {
   get(id: number, token: string): Promise<APIResponse> {
     return this.request.get(`/ui-api/message/${String(id)}`, { headers: authCookie(token) });
   }
+
+  delete(id: number, token: string): Promise<APIResponse> {
+    return this.request.delete(`/ui-api/message/${String(id)}`, { headers: authCookie(token) });
+  }
 }

@@ -9,8 +9,11 @@ import { newMessage } from '../../src/data/factories.ts';
 import { expect, knownIssue, test } from '../fixtures.ts';
 
 test.describe('POST /ui-api/message', () => {
-  test('accepts a valid message', async ({ messageApi }) => {
-    const body = await expectJson(await messageApi.create(newMessage()), 200, successSchema);
+  test('accepts a valid message', async ({ messageApi, deleteMessageAfterTest }) => {
+    const message = newMessage();
+    deleteMessageAfterTest(message.name);
+
+    const body = await expectJson(await messageApi.create(message), 200, successSchema);
 
     expect(body.success).toBe(true);
   });
@@ -31,8 +34,13 @@ test.describe('POST /ui-api/message', () => {
 });
 
 test.describe('GET /ui-api/message', () => {
-  test('lists the new message for an admin', async ({ messageApi, adminToken }) => {
+  test('lists the new message for an admin', async ({
+    messageApi,
+    deleteMessageAfterTest,
+    adminToken,
+  }) => {
     const message = newMessage();
+    deleteMessageAfterTest(message.name);
     await expectJson(await messageApi.create(message), 200, successSchema);
 
     const { messages } = await expectJson(
@@ -56,8 +64,9 @@ test.describe('GET /ui-api/message', () => {
 });
 
 test.describe('GET /ui-api/message/{id}', () => {
-  test('returns the full message', async ({ messageApi, adminToken }) => {
+  test('returns the full message', async ({ messageApi, deleteMessageAfterTest, adminToken }) => {
     const message = newMessage();
+    deleteMessageAfterTest(message.name);
     await expectJson(await messageApi.create(message), 200, successSchema);
     const { messages } = await expectJson(
       await messageApi.list(adminToken),

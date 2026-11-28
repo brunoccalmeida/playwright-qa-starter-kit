@@ -132,13 +132,14 @@ test.describe('POST /ui-api/booking', () => {
   test(
     'does not refuse a booking it stored',
     knownIssue('KI-8'),
-    async ({ bookingApi, room, adminToken }) => {
+    async ({ bookingApi, deleteBookingAfterTest, room, adminToken }) => {
       // Valid for the booking service, one character too long for the message
       // service's 255-character email column: the guest's message fails after
       // the booking is stored, and the UI API's retry is refused as a clash
       const domain = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.example.com`;
       const email = `${'d'.repeat(256 - 1 - domain.length)}@${domain}`;
       const booking = { ...newGuestBooking(room.roomid, futureStay()), email };
+      deleteBookingAfterTest(booking);
 
       const response = await bookingApi.create(booking);
 

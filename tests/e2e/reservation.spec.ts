@@ -8,9 +8,11 @@ test.describe('Room reservation', () => {
     room,
     reservationPage,
     bookingApi,
+    deleteBookingAfterTest,
     adminToken,
   }) => {
     const booking = newGuestBooking(room.roomid, futureStay());
+    deleteBookingAfterTest(booking);
 
     await reservationPage.goto(room.roomid, booking.bookingdates);
     await reservationPage.reserve(booking);
