@@ -1,5 +1,6 @@
 #!/bin/sh
-# Applies to the project's GitHub repository what files cannot (#74): the
+# Applies to the project's GitHub repository what files cannot
+# (https://github.com/brunoccalmeida/automation-template/issues/74): the
 # labels the mission cycle uses, the merge settings, and the ruleset in
 # .github/rulesets/protect-main.json. Run it from the project's root; gh fills
 # {owner}/{repo} from the clone's remote or GH_REPO (gh api manual). It is

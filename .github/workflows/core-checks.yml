@@ -1,11 +1,13 @@
 name: Core checks
 
-# The enforcement every project gets from the core (#71), as a reusable
+# The enforcement every project gets from the core
+# (https://github.com/brunoccalmeida/automation-template/issues/71), as a reusable
 # workflow: the project's CI calls it as one job in the needs of its gate,
 # so a failure here fails the single check the ruleset requires. It is
 # template-owned and updated by copier update; the calling workflow belongs
 # to the project, which adds its own jobs there. The jobs name no stack
-# (ADR 0003). No concurrency here: when called, github.workflow is the
+# (https://github.com/brunoccalmeida/automation-template/blob/main/docs/adr/0003-stack-agnostic-core-defines-contracts.md).
+# No concurrency here: when called, github.workflow is the
 # caller's name, so a group here could cancel the caller itself.
 on:
   workflow_call:
@@ -16,7 +18,8 @@ permissions:
 jobs:
   # Every tracked text file is UTF-8: a UTF-16 file (Windows PowerShell 5.1
   # Out-File) is stored by Git as binary and silently ignored by the tool
-  # that reads it (uat#26). The script's header lists what it checks.
+  # that reads it (https://github.com/brunoccalmeida/uat-automation-framework/issues/26).
+  # The script's header lists what it checks.
   text-encoding:
     runs-on: ubuntu-latest
     timeout-minutes: 5
