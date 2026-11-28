@@ -11,9 +11,10 @@ import { expect, knownIssue, test } from '../fixtures.ts';
 test.describe('POST /ui-api/message', () => {
   test('accepts a valid message', async ({ messageApi, deleteMessageAfterTest }) => {
     const message = newMessage();
-    deleteMessageAfterTest(message.name);
+    const sent = deleteMessageAfterTest(message.name);
 
     const body = await expectJson(await messageApi.create(message), 200, successSchema);
+    sent();
 
     expect(body.success).toBe(true);
   });
@@ -40,8 +41,9 @@ test.describe('GET /ui-api/message', () => {
     adminToken,
   }) => {
     const message = newMessage();
-    deleteMessageAfterTest(message.name);
+    const sent = deleteMessageAfterTest(message.name);
     await expectJson(await messageApi.create(message), 200, successSchema);
+    sent();
 
     const { messages } = await expectJson(
       await messageApi.list(adminToken),
@@ -66,8 +68,9 @@ test.describe('GET /ui-api/message', () => {
 test.describe('GET /ui-api/message/{id}', () => {
   test('returns the full message', async ({ messageApi, deleteMessageAfterTest, adminToken }) => {
     const message = newMessage();
-    deleteMessageAfterTest(message.name);
+    const sent = deleteMessageAfterTest(message.name);
     await expectJson(await messageApi.create(message), 200, successSchema);
+    sent();
     const { messages } = await expectJson(
       await messageApi.list(adminToken),
       200,

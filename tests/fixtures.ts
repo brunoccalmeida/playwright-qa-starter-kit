@@ -62,13 +62,21 @@ type ApiFixtures = {
    * (probed in #66), so `room` does not cover them. A booking with email and
    * phone also registers the message it creates. Call it before the create:
    * the app can store a booking and still answer an error (KI-8).
+   *
+   * It returns a function to call once the app confirmed the create (and,
+   * with email and phone, its message). Not finding a confirmed item adds a
+   * `cleanup` annotation: either the environment's reset deleted it, or the
+   * search no longer matches what the app stores, which would otherwise
+   * leave data behind in silence. An unconfirmed item not found is the
+   * normal end of a refused request, and is not reported.
    */
-  deleteBookingAfterTest: (booking: NewBooking) => void;
+  deleteBookingAfterTest: (booking: NewBooking) => () => void;
   /**
    * Deletes the messages with this unique sender name after the test. Call
-   * it before sending.
+   * it before sending; call the function it returns once the app confirmed
+   * the message (see `deleteBookingAfterTest`).
    */
-  deleteMessageAfterTest: (name: string) => void;
+  deleteMessageAfterTest: (name: string) => () => void;
   /** Creates a booking the test needs; a refusal explains the state of the room. */
   createBooking: (booking: NewBooking) => ReturnType<typeof createBookingOrExplain>;
   /**
@@ -227,9 +235,13 @@ export const test = base.extend<ApiFixtures>({
     }
   },
   deleteMessageAfterTest: async ({ authApi, messageApi }, use, testInfo) => {
-    const names = new Set<string>();
+    // Name to whether the app confirmed it
+    const names = new Map<string, boolean>();
     await use((name) => {
-      names.add(name);
+      names.set(name, names.get(name) ?? false);
+      return () => {
+        names.set(name, true);
+      };
     });
     if (names.size === 0) {
       return;
@@ -237,13 +249,13 @@ export const test = base.extend<ApiFixtures>({
     // A login of its own: the auth reset may have invalidated the test's token (#75)
     const token = await logIn(authApi);
     const failures: string[] = [];
-    for (const name of names) {
+    for (const [name, confirmed] of names) {
       const find = async () => {
         const { messages } = await expectJson(await messageApi.list(token), 200, messageListSchema);
         return messages.filter((m) => m.name === name).map((m) => m.id);
       };
       failures.push(
-        ...(await deleteFoundAgain(testInfo, `Message from "${name}"`, find, (id) =>
+        ...(await deleteFoundAgain(testInfo, `Message from "${name}"`, confirmed, find, (id) =>
           messageApi.delete(id, token),
         )),
       );
@@ -256,12 +268,18 @@ export const test = base.extend<ApiFixtures>({
     testInfo,
   ) => {
     // Keyed by room and guest: a test that sends the same booking twice deletes it once
-    const bookings = new Map<string, NewBooking>();
+    const bookings = new Map<string, { booking: NewBooking; confirmed: boolean }>();
     await use((booking) => {
-      bookings.set(`${String(booking.roomid)} ${booking.lastname}`, booking);
-      if (booking.email !== undefined && booking.phone !== undefined) {
-        deleteMessageAfterTest(bookingMessageName(booking));
-      }
+      const key = `${String(booking.roomid)} ${booking.lastname}`;
+      bookings.set(key, { booking, confirmed: bookings.get(key)?.confirmed ?? false });
+      const messageSent =
+        booking.email !== undefined && booking.phone !== undefined
+          ? deleteMessageAfterTest(bookingMessageName(booking))
+          : undefined;
+      return () => {
+        bookings.set(key, { booking, confirmed: true });
+        messageSent?.();
+      };
     });
     if (bookings.size === 0) {
       return;
@@ -269,7 +287,10 @@ export const test = base.extend<ApiFixtures>({
     // A login of its own: the auth reset may have invalidated the test's token (#75)
     const token = await logIn(authApi);
     const failures: string[] = [];
-    for (const { roomid, lastname } of bookings.values()) {
+    for (const {
+      booking: { roomid, lastname },
+      confirmed,
+    } of bookings.values()) {
       const find = async () => {
         const listed = await expectJson(
           await bookingApi.listByRoom(roomid, token),
@@ -282,6 +303,7 @@ export const test = base.extend<ApiFixtures>({
         ...(await deleteFoundAgain(
           testInfo,
           `Booking of guest "${lastname}" in room ${String(roomid)}`,
+          confirmed,
           find,
           (id) => bookingApi.delete(id, token),
         )),
@@ -290,9 +312,11 @@ export const test = base.extend<ApiFixtures>({
     throwIfAny(failures);
   },
   createBooking: async ({ bookingApi, adminToken, deleteBookingAfterTest }, use) => {
-    await use((booking) => {
-      deleteBookingAfterTest(booking);
-      return createBookingOrExplain(bookingApi, booking, adminToken);
+    await use(async (booking) => {
+      const created = deleteBookingAfterTest(booking);
+      const body = await createBookingOrExplain(bookingApi, booking, adminToken);
+      created();
+      return body;
     });
   },
   knownIssueMarked: [
@@ -324,20 +348,32 @@ async function logIn(authApi: AuthApi): Promise<string> {
 
 /**
  * Deletes every id `find` returns and returns the failures, so one failed
- * delete does not leave the rest behind. Nothing found is not reported: it
- * is the normal end of a refused request (a 409 clash, KI-8's message). A
- * delete that failed because the item was already gone is the shared
- * environment's doing, not the suite's: a `cleanup` annotation, which does
- * not bury the test's own error.
+ * delete does not leave the rest behind. Nothing found is reported only for
+ * an item the app confirmed: for the others it is the normal end of a
+ * refused request (a 409 clash, KI-8's message). That report, and a delete
+ * that failed because the item was already gone, are `cleanup` annotations,
+ * not failures: the shared environment's resets delete data too, and an
+ * annotation does not bury the test's own error.
  */
 async function deleteFoundAgain(
   testInfo: TestInfo,
   what: string,
+  confirmed: boolean,
   find: () => Promise<number[]>,
   remove: (id: number) => Promise<APIResponse>,
 ): Promise<string[]> {
+  const ids = await find();
+  if (ids.length === 0 && confirmed) {
+    testInfo.annotations.push({
+      type: 'cleanup',
+      description:
+        `${what} was confirmed by the app but not found after the test; nothing deleted. ` +
+        `Either the shared environment's reset deleted it, or the search no longer matches ` +
+        `what the app stores, and test data is being left behind.`,
+    });
+  }
   const failures: string[] = [];
-  for (const id of await find()) {
+  for (const id of ids) {
     const response = await remove(id);
     const body = successSchema.safeParse(await response.json().catch(() => null));
     if (response.status() === 200 && body.success && body.data.success) {

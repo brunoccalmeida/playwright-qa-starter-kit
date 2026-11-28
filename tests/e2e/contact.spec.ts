@@ -11,12 +11,13 @@ test.describe('Contact form', () => {
     adminToken,
   }) => {
     const message = newMessage();
-    deleteMessageAfterTest(message.name);
+    const sent = deleteMessageAfterTest(message.name);
 
     await homePage.goto();
     await homePage.sendMessage(message);
 
     await expect(homePage.contactConfirmation(message.name)).toBeVisible();
+    sent();
     const { messages } = await expectJson(
       await messageApi.list(adminToken),
       200,
