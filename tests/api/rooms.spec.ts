@@ -114,7 +114,7 @@ test.describe('DELETE /ui-api/room/{id}', () => {
   });
 
   test(
-    'rejects an invalidated token with 403',
+    'rejects an invalidated token with 401 or 403',
     knownIssue('KI-9'),
     async ({ authApi, roomApi, room }) => {
       // A login of its own: invalidating adminToken would also break the
@@ -128,7 +128,9 @@ test.describe('DELETE /ui-api/room/{id}', () => {
       await expectStatus(await authApi.validate(token), 403);
 
       test.fail();
-      await expectJson(await roomApi.delete(room.roomid, token), 403, errorListSchema);
+      // Status only, and either one: a fix that passes on the room service's
+      // empty 403, or answers 401 as without a token, must be reported
+      await expectStatus(await roomApi.delete(room.roomid, token), [401, 403]);
     },
   );
 

@@ -33,8 +33,9 @@ export class AuthApi {
 
   /**
    * The auth service's own logout, behind the /api/auth proxy: it deletes
-   * this token only. Used to invalidate a token, which the UI API's logout
-   * does not do (KI-3).
+   * this token only (`DELETE_BY_TOKEN` in
+   * https://github.com/mwinteringham/restful-booker-platform/blob/2069ba1c622c7327395d329eccdbe4e8ea90349f/auth/src/main/java/com/automationintesting/db/AuthDB.java#L76-L82).
+   * Used to invalidate a token, which the UI API's logout does not do (KI-3).
    */
   serviceLogout(token: string): Promise<APIResponse> {
     return this.request.post('/api/auth/logout', { data: { token } });

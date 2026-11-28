@@ -49,10 +49,16 @@ export async function expectJson<Schema extends z.ZodType>(
  * (login tokens included) would land in the published HTML report. Here the
  * body is only read into the message when the check fails.
  */
-export async function expectStatus(response: APIResponse, status: number): Promise<void> {
-  if (response.status() !== status) {
+export async function expectStatus(
+  response: APIResponse,
+  status: number | readonly number[],
+): Promise<void> {
+  // A list: any of them is the correct answer, e.g. 401 or 403 for a fix
+  // whose exact status is unknown
+  const accepted = typeof status === 'number' ? [status] : status;
+  if (!accepted.includes(response.status())) {
     throw new Error(
-      `Expected HTTP ${String(status)}, received ${String(response.status())}: ${response.url()}\nBody: ${await response.text()}`,
+      `Expected HTTP ${accepted.join(' or ')}, received ${String(response.status())}: ${response.url()}\nBody: ${await response.text()}`,
     );
   }
 }
