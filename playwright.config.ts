@@ -49,7 +49,15 @@ export default defineConfig({
     {
       name: 'firefox',
       testDir: './tests/e2e',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // With -silent, Juggler reports the browser ready before Firefox's session store
+        // starts; a page opened in that window makes every context close of that browser
+        // fail with "_maybeDontRestoreTabs ... is undefined" (#55,
+        // microsoft/playwright#43413, closed as not planned). Without it, Juggler waits for
+        // startup to finish: about 0.8 s more per browser launch, once per worker.
+        launchOptions: { ignoreDefaultArgs: ['-silent'] },
+      },
     },
   ],
 });

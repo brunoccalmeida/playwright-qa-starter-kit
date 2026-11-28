@@ -38,6 +38,8 @@ _Judgment call:_ the policy of the sibling project [uat-automation-framework](ht
 
 To force a race instead of repeating until it shows, delay a response with `page.route` and `route.continue()` after a wait (`route.fulfill()` with a delay left Firefox without rendering, in [#25](https://github.com/brunoccalmeida/playwright-qa-starter-kit/issues/25)).
 
+A race inside the browser cannot be widened from the test, and repeating the test does not help when the browser is shared by the worker: `--repeat-each` reuses it, so a race at launch gets one try per worker. Force it in a copy of the browser instead. Copy the `ms-playwright` folder to a scratch directory, patch its `omni.ja`, and point `launchOptions.executablePath` at it from a config that is never committed. Read the patch's switch from an environment variable, because `firefoxUserPrefs` is not set yet early in startup. Then the same binary serves as control and as injection, as in #55 below.
+
 To reproduce a failure seen only in CI, run the suite in the official Playwright image, as the `e2e` job does (`mcr.microsoft.com/playwright:v<version>-noble`, `CI=true`, `--ipc=host`), and repeat without retries: `npx playwright test <file> --repeat-each=20 --retries=0`.
 
 ## Quarantine (section 5)
@@ -81,6 +83,25 @@ No test is in quarantine today.
 5. **Proved.** With every earlier token logged out through the service before each test (`--workers=1 --repeat-each=3`, both browsers), the spec passed 18 of 18; the same condition failed the saved session in step 3. The KI-5 test, run as a plain `test`, still fails for its own reason (`Room #` has no label).
 6. **What remains.** A reset during an admin test still fails it, and can still make a `test.fail()` pass for the wrong reason, since `test.fail()` accepts any failure (step 3). The window shrinks from the rest of the run to the one test running at the reset.
 7. **Closed for known-issue tests (#78).** `test.fail()` is now called in the body, right before the assertions that prove the bug: Playwright compares `status` with `expectedStatus` when the test ends, and the body call sets `expectedStatus` only from that line on (read in 1.65.1). With the token logged out through the service before the KI-5 test, it went from "expected" to failed at the login form. A room deleted after the marker turns the test red with the `Environment:` error, whether the wiped room made the assertion fail or pass: the `room` teardown sets `expectedStatus` back to `passed`. Without that line, the same probe counted as expected. Writing `expectedStatus` is read in the source, not documented: repeat that probe on every Playwright update. Still open: an auth reset between the KI-3 logout and its check makes that test pass, reported as "Expected to fail, but passed", a false alarm that a re-run settles.
+
+## Worked example: Firefox context close fails with a protocol error (#55)
+
+1. **Seen.** On 2026-11-18, in 1 of 4 local full runs on Windows (Playwright 1.64.1), 3 Firefox E2E tests failed in teardown after their body passed, all with `browserContext.close: Protocol error (Browser.removeBrowserContext): can't access property "_maybeDontRestoreTabs", this[#windows][aWindow.__SSi] is undefined`. There were 0 occurrences in CI (Linux), and 0 in 50 local passes on 1.65.1. Those 50 passes were only 4 invocations, because the browser is shared by the worker.
+2. **Ruled out by the source.** The same error is [microsoft/playwright#43413](https://github.com/microsoft/playwright/issues/43413), closed as not planned. According to its report and the maintainer, with `-silent` Juggler reports the browser ready while Firefox is still in `final-ui-startup`, before the session store starts. A window opened in that gap never gets a session store entry, and closing its last tab throws. The Firefox bundled with 1.65.1 (`firefox-1572`, read from its `omni.ja`) confirms the Juggler side. With `-silent`, `Juggler.js` resolves the startup promise at `command-line-startup`; without it, at `browser-idle-startup-tasks-finished`. `SessionStore.maybeDontRestoreTabs` reads `this.#windows[this.#windowIds.get(aWindow)]` without a check, so the message on 1.65.1 reads `this[#windowIds].get(...)` instead of `aWindow.__SSi`. A test cannot cause this, and the shared environment is not involved.
+3. **Load does not force it.** A fresh Firefox per trial gave 0 failures in 3,200 launches, run 16 at a time with the CPU saturated, and 0 in 30 with a wait in Node before or after the first page. Waiting only gives the session store time to start.
+4. **Injected.** The probe used a copy of `firefox-1572` with one change in `BrowserGlue._beforeUIStartup`: a nested event loop (`Services.tm.spinEventLoopUntil`) of `PROBE55_SPIN_MS` milliseconds right before `browser-before-ui-startup`, the startup category that, we infer, starts the session store. Its log showed `Juggler listening to the pipe` before `_beforeUIStartup` ran, and the first page opened during the loop. Each launch closed 2 contexts in turn:
+
+   | Patched copy       | `-silent` | Context 1 close fails | Context 2 close fails |
+   | ------------------ | --------- | --------------------- | --------------------- |
+   | no delay (control) | yes       | 0 of 10               | 0 of 10               |
+   | 4 s delay          | yes       | 10 of 10              | 10 of 10              |
+   | 4 s delay          | no        | 0 of 10               | 0 of 10               |
+
+   The second context fails too. That is why one lost race failed 3 tests in one run: every context the worker closes after it hits the same window.
+
+5. **Fixed in the config.** The `firefox` project launches with `ignoreDefaultArgs: ['-silent']`. Playwright adds `-silent` only to a non-persistent launch, in place of `about:blank`, and still waits for `Juggler listening to the pipe`. The [docs](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-ignore-default-args) call the option "dangerous": it drops only the flag named. The cost was measured on stock Firefox as the median of 15 runs of launch plus first page: 1,118 ms with `-silent` and 1,894 ms without, paid once per worker.
+6. **Proved.** On the patched copy with the 4 s delay, `smoke.spec.ts` and `home.spec.ts` on Firefox failed 2 of 2 with this error before the change, and passed 2 of 2 after it.
+7. **Why it closes.** Observed: the error, which means the window had no session store entry. By the source and the injection, the window gets no entry when Juggler reports ready before startup ends, and with `-silent` removed Juggler waits for startup to end. Not observed: what delayed startup in the 2026-11-18 run. The fix does not depend on it. If the same message shows on Firefox with this option in place, this case reopens.
 
 ## Sources
 
