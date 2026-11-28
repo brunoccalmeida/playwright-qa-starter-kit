@@ -93,15 +93,15 @@ rm tests/e2e/{admin-rooms,contact,home,reservation}.spec.ts
 
 `npx tsc` now lists what still refers to the deleted files. Fix each one:
 
-| File                             | What to change                                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                  |
-| `tests/e2e/fixtures.ts`          | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports. |
-| `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.          |
-| `tests/api/auth.spec.ts`         | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                   |
-| `tests/known-issues.ts`          | Empty the map: `export const knownIssueTitles = {} as const;`                                                  |
-| `docs/KNOWN_ISSUES.md`           | Delete every `## KI-n` entry, the `Test environment limit` section and the `Resolved issues` section.          |
-| `docs/FLAKY_TESTS_PLAYWRIGHT.md` | Delete the "Open case" section: it refers to `createBooking` and to the section deleted above.                 |
+| File                             | What to change                                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/fixtures.ts`              | Keep `authApi` and `adminToken`; remove the other fixtures and their imports.                                                                                                                            |
+| `tests/e2e/fixtures.ts`          | Keep `ADMIN_SESSION`, `adminLoginPage` and `adminRoomsPage`; remove the other page fixtures and their imports.                                                                                           |
+| `src/pages/admin-rooms-page.ts`  | Keep only the locator and `expectLoaded()`: this becomes the page an admin lands on after logging in.                                                                                                    |
+| `tests/api/auth.spec.ts`         | Remove the `test.fail` for KI-3 and the `knownIssue` import.                                                                                                                                             |
+| `tests/known-issues.ts`          | Empty the map: `export const knownIssueTitles = {} as const;`                                                                                                                                            |
+| `docs/KNOWN_ISSUES.md`           | Delete every `## KI-n` entry, the `Test environment limit` section and the `Resolved issues` section.                                                                                                    |
+| `docs/FLAKY_TESTS_PLAYWRIGHT.md` | Delete the sections "Open case: the missing login error on Firefox (#62)" and "Worked example: a booking refused with 409 (#42, #54)": they refer to the demo app, its known issues and `createBooking`. |
 
 These parts carry over without changes: [expect-json.ts](../src/api/expect-json.ts), [fill-secret.ts](../src/pages/fill-secret.ts), [redacting-reporter.ts](../src/reporting/redacting-reporter.ts), [playwright.config.ts](../playwright.config.ts), [eslint.config.mjs](../eslint.config.mjs), the sentinels in [scripts/](../scripts/) and the jobs of the CI workflow.
 

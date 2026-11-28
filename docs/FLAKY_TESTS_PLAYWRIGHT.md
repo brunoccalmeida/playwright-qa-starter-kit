@@ -63,9 +63,14 @@ No test is in quarantine today.
 4. **Changed.** `AdminLoginPage.login()` registers `waitForResponse` for `POST /ui-api/auth/login` before the click and returns the response; the test asserts the `401` first. The evidence now tells the causes apart: a missing response fails on the network, and an alert still missing after a confirmed `401` rules out the slow response.
 5. **Checked.** The 6 s probe passed on both browsers. The login spec went 41 of 41 with `--repeat-each=10 --retries=0`; at a 5 % failure rate, 40 green runs happen by chance 13 % of the time, so this is supporting evidence only. The issue stays open until a recurrence, or its absence, says more.
 
-## Open case: a booking refused with 409 (#42, #54)
+## Worked example: a booking refused with 409 (#42, #54)
 
-The first bookings of a run were refused with `409` for 3 to 5 seconds, in 3 of 36 CI attempts (#42); on 2026-11-26, two refused bookings found the room already holding a booking with exactly the requested dates (#54). The likely cause, read in the application source and not observed yet, is the application retrying a `POST` it had stored ([KNOWN_ISSUES.md](KNOWN_ISSUES.md#test-environment-limit-rooms-and-bookings-reset-independently)). `createBooking` records how long the refusal took and marks the room's booking that has the same guest, so the next occurrence confirms or refutes it. It will turn the run red: copy that evidence into #54.
+1. **Seen.** In 3 of 36 CI attempts up to 2026-11-08, the first bookings of a run were refused with `409` for 3 to 5 seconds (#42). On 2026-11-26, two refused bookings found the room already holding a booking with exactly the requested (random) dates (#54). 32 local passes on 2026-11-27 showed no refusal: supporting evidence only (section 4).
+2. **Ruled out by the source.** The booking service answers `409` only before it stores anything, so a stored booking refused with `409` takes two requests. The second one is the UI API retrying the `500` that the service returns when sending the guest's message fails after the booking is stored ([KI-8](KNOWN_ISSUES.md#ki-8-a-stored-booking-is-refused-with-409)).
+3. **Forced, not repeated.** Instead of waiting for the message service to fail in the shared environment, a probe made it fail on demand: a valid email address of 256 characters, one more than its column holds, was refused with `409` after 1.3 s and the booking was stored; 255 characters gave `201` in 0.2 s. The same address without a phone gave `201`: with no email or phone, the booking service does not call the message service.
+4. **Pinned.** The defect is an application bug, so it gets a `test.fail()` (`does not refuse a booking it stored`), seen failing for the bug's reason (`{status: 409, stored: true}`) and passing with 255 characters.
+5. **Fixed in the support code.** `newBooking` leaves out email and phone, so the tests that do not test the guest's message stop depending on the message service; `newGuestBooking` adds them where the test needs them (the reservation form, the KI-8 test). The browser reservation keeps them, as a guest sends them, and can still meet KI-8.
+6. **Still not observed:** what made the message service fail in CI. A refusal over 1 s marked `(same guest as the request)` in a test **without** email refutes this cause and reopens the case.
 
 ## Sources
 
