@@ -35,6 +35,10 @@ type ApiFixtures = {
    * defect of the suite, not noise to hide. In a test.fail() test the error
    * is reported but the test still counts as expected (measured on 1.65.1):
    * a broken delete still turns every regular test that uses `room` red.
+   * Two failed deletes caused by the shared environment are not failures of
+   * the suite and become a `cleanup` annotation: the room was already gone,
+   * or the auth reset invalidated the token (then one more delete with a
+   * new login, which must succeed).
    */
   deleteRoomAfterTest: (roomName: string) => void;
   /** Creates a booking the test needs; a refusal explains the state of the room. */
@@ -62,7 +66,7 @@ export const test = base.extend<ApiFixtures>({
     );
     await use(token);
   },
-  deleteRoomAfterTest: async ({ roomApi, adminToken }, use, testInfo) => {
+  deleteRoomAfterTest: async ({ authApi, roomApi, adminToken }, use, testInfo) => {
     const roomNames: string[] = [];
     await use((roomName) => {
       roomNames.push(roomName);
@@ -86,13 +90,55 @@ export const test = base.extend<ApiFixtures>({
         });
         continue;
       }
-      const { success } = await expectJson(
-        await roomApi.delete(room.roomid, adminToken),
-        200,
-        successSchema,
-      );
+      let response = await roomApi.delete(room.roomid, adminToken);
+      let tokenWasInvalidated = false;
+      if (!response.ok()) {
+        // The UI API answers 500 both for a room that no longer exists
+        // (KI-7) and for an invalidated token (#75): tell the shared
+        // environment's resets apart from a real delete failure
+        const after = await expectJson(await roomApi.list(), 200, roomListSchema);
+        if (!after.rooms.some((r) => r.roomName === roomName)) {
+          testInfo.annotations.push({
+            type: 'cleanup',
+            description:
+              `Environment: room "${roomName}" (id ${String(room.roomid)}) was gone when its delete ` +
+              `failed: the shared environment's room reset or another user deleted it. ` +
+              `Nothing left behind.`,
+          });
+          continue;
+        }
+        if ((await authApi.validate(adminToken)).status() === 403) {
+          // A diagnosed cause, so one more delete with a fresh token: the
+          // room would otherwise stay in the shared environment
+          const { token } = await expectJson(
+            await authApi.login(adminCredentials),
+            200,
+            tokenResponseSchema,
+          );
+          response = await roomApi.delete(room.roomid, token);
+          if (!response.ok()) {
+            throw new Error(
+              `Room "${roomName}" (id ${String(room.roomid)}) was not deleted: the test's admin ` +
+                `token was invalidated during the test (the auth service's scheduled reset), and ` +
+                `the delete with a new login also failed with HTTP ${String(response.status())}: ` +
+                `${response.url()}\nBody: ${await response.text()}`,
+            );
+          }
+          tokenWasInvalidated = true;
+        }
+      }
+      const { success } = await expectJson(response, 200, successSchema);
       if (!success) {
         throw new Error(`Room "${roomName}" (id ${String(room.roomid)}) was not deleted`);
+      }
+      if (tokenWasInvalidated) {
+        testInfo.annotations.push({
+          type: 'cleanup',
+          description:
+            `Environment: the test's admin token was invalidated during the test (the auth ` +
+            `service's scheduled reset deletes every token); room "${roomName}" ` +
+            `(id ${String(room.roomid)}) was deleted with a new login.`,
+        });
       }
     }
   },
